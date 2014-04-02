@@ -51,28 +51,25 @@ struct RGBC{
 class ADJDS311{
   public:
 
-    ADJDS311(int led_pin);  // constructor
+    ADJDS311();  // constructor
     void init();
     void calibrate();
-    void ledOn();
-    void ledOff();
 
     RGBC read();
-    
+
  private:
  	int _led_pin;
-	
+
 	// initial values for integration time registers
 	unsigned char colorCap[4];
 	unsigned int colorInt[4];
 	signed char colorOffset[4];
-	
-	void getOffset();
+
     void writeRegister(unsigned char data, unsigned char address);
     unsigned char readRegister(unsigned char address);
     int readRegisterInt(unsigned char address);
-	
-	
+
+
 	int calibrateClear();
     int calibrateColor();
     void calibrateCapacitors();

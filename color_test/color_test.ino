@@ -7,8 +7,8 @@
  * http://www.arduino.cc/en/Reference/PROGMEM
  */
 
-int sensorLed_pin = 2; //LED on the ADJDS-311
-ADJDS311 colorSensor(sensorLed_pin);
+#define SENSOR_LED_PIN 2 //LED on the ADJDS-311
+ADJDS311 colorSensor;
 
 /* PIN LAYOUT:
  *
@@ -83,11 +83,12 @@ PROGMEM const unsigned char LED_VALS[NUM_COLORS * 3] =
 
 void setup()
 {
+  Wire.begin();
   Serial.begin(9600);
   setLED(255,0,0);
 
   colorSensor.init();
-  colorSensor.ledOn(); //turn LED on
+  digitalWrite(SENSOR_LED_PIN, HIGH);
 
   // Calibrate white
   // Need to hold white card in front (1-3mm) of it to calibrate from
@@ -177,6 +178,15 @@ int findColorMatch(RGBC color)
     highColor.green = pgm_read_byte_near(DETECTION_HIGH_VALS+offset+1);
     highColor.blue  = pgm_read_byte_near(DETECTION_HIGH_VALS+offset+2);
     highColor.clear = pgm_read_byte_near(DETECTION_HIGH_VALS+offset+3);
+
+    // Serial.print(lowColor.red);
+    // Serial.print(" ");
+    // Serial.print(lowColor.green);
+    // Serial.print(" ");
+    // Serial.print(lowColor.blue);
+    // Serial.print(" ");
+    // Serial.print(lowColor.clear);
+    // Serial.print("\n");
 
     if ( lowColor.red <= color.red  && lowColor.green <= color.green  && lowColor.blue <= color.blue  && lowColor.clear <= color.clear
       && color.red <= highColor.red && color.green <= highColor.green && color.blue <= highColor.blue && color.clear <= highColor.clear

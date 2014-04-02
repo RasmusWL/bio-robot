@@ -1,8 +1,7 @@
 #include <Arduino.h>
 #include <ADJDS311.h>
 
-ADJDS311::ADJDS311(int led_pin) {
-	_led_pin = led_pin;
+ADJDS311::ADJDS311() {
 }
 
 
@@ -14,24 +13,8 @@ void ADJDS311::calibrate(){
 	calibrateCapacitors();  // This calibrates the RGB, and C cap registers
 }
 
-void ADJDS311::ledOn(){
-	digitalWrite(_led_pin, HIGH);
-}
-
-void ADJDS311::ledOff(){
-	digitalWrite(_led_pin, LOW);
-}
-
-
 void ADJDS311::init(){
-  Serial.begin(9600);
-	Serial.print("init\n");
-
-	pinMode(_led_pin, OUTPUT);  // Set the sensor's LED as output
-
-	Wire.begin();
 	delay(1);  // Wait for ADJD reset sequence
-
 
 	colorCap[0] = 9;
 	colorCap[1] = 9;
@@ -251,24 +234,6 @@ RGBC ADJDS311::read(){
 	color.clear = readRegisterInt(DATA_CLEAR_LO);
 
 	return color;
-}
-
-/* getOffset() - This function performs the offset reading
-and stores the offset data into the colorOffset[] array.
-You can turn on data trimming by uncommenting out the
-writing 0x01 to 0x01 code.
-*/
-void ADJDS311::getOffset(){
-  digitalWrite(_led_pin, LOW);  // turn LED off
-  delay(10);  // wait a tic
-  writeRegister(0x02, 0x00); // start sensing
-  while(readRegister(0x00) != 0)
-    ; // waiting for a result
-  //writeRegister(0x01, 0x01);  // set trim
-  //delay(100);
-  for (int i=0; i<4; i++)
-    colorOffset[i] = (signed char) readRegister(OFFSET_RED+i);
-  digitalWrite(_led_pin, HIGH);
 }
 
 // Write a byte of data to a specific ADJD-S311 address
