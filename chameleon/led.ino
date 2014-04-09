@@ -61,6 +61,30 @@ void led_showOff()
     }
 }
 
+void led_disco()
+{
+    led_setLED(0,0,0);
+    _red = 0;
+    _green = 0;
+    _blue = 0;
+
+    for (int i = 0; i < 10; i++)
+    {
+        led_transition(255,0,0);
+        delay(5);
+        led_transition(255,255,0);
+        delay(5);
+        led_transition(0,255,0);
+        delay(5);
+        led_transition(0,255,255);
+        delay(5);
+        led_transition(0,0,255);
+        delay(5);
+        led_transition(255,0,255);
+        delay(5);
+    }
+}
+
 void led_transition(int newRed, int newGreen, int newBlue)
 {
     while (_red != newRed || _green != newGreen || _blue != newBlue)
