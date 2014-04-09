@@ -12,17 +12,17 @@ void motor_setup()
     pinMode(RIGHT_MOTOR_SPEED_PIN, OUTPUT);
     pinMode(RIGHT_MOTOR_DIR_PIN, OUTPUT);
 
-    setLeftSpeed(0);
-    setRightSpeed(0);
+    motor_setLeftSpeed(0);
+    motor_setRightSpeed(0);
 }
 
-void setLeftSpeed(int newSpeed)
+void motor_setLeftSpeed(int newSpeed)
 {
     __setMotorSpeed(newSpeed, leftSpeed, LEFT_MOTOR_SPEED_PIN, LEFT_MOTOR_DIR_PIN);
     leftSpeed = newSpeed;
 }
 
-void setRightSpeed(int newSpeed)
+void motor_setRightSpeed(int newSpeed)
 {
     __setMotorSpeed(newSpeed, rightSpeed, RIGHT_MOTOR_SPEED_PIN, RIGHT_MOTOR_DIR_PIN);
     rightSpeed = newSpeed;
