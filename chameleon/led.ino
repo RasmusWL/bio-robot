@@ -37,6 +37,10 @@ void led_setLED(int red, int green, int blue)
   analogWrite(BLUE_PIN,  255-blueOut);
 }
 
+int _red = 0;
+int _green = 0;
+int _blue = 0;
+
 void led_showOff()
 {
     led_setLED(0,0,0);
@@ -57,13 +61,9 @@ void led_showOff()
     }
 }
 
-int _red = 0;
-int _green = 0;
-int _blue = 0;
-
 void led_transition(int newRed, int newGreen, int newBlue)
 {
-    while (_red != newRed || green != newGreen || blue != newBlue)
+    while (_red != newRed || _green != newGreen || _blue != newBlue)
     {
         if      (_red < newRed) _red++;
         else if (_red > newRed) _red--;

@@ -135,9 +135,9 @@ void colorsens_debug_sens(ADJDS311* sens)
     RGBC color = colorsens_read(sens);
     int match = colorsens_findColorMatch(color);
 
-    if (match != -1) Serial.print(" ")
-    Serial.print(match)
-    Serial.print(" <~~ ")
+    if (match != -1) { Serial.print(" "); }
+    Serial.print(match);
+    Serial.print(" <~~ ");
     print3Digit(color.red);
     Serial.print(" ");
     print3Digit(color.green);
