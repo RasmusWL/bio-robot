@@ -6,7 +6,7 @@
  *   2:  I  Proximity Sensor 2
  *   3:  I  Proximity Sensor 3
  *   4:  I  Color Sensor SDA (I2C)
- *   5:  I  Color Sensor SCL (I2C)
+ *   5:  I  Color Sensor SCL (I2C) - clock
  *
  * DIGITAL:
  *   0:     [is unusable due to serial connection]
@@ -28,9 +28,9 @@
 #define COLOR_SENS_SELECT_0_PIN A0
 #define COLOR_SENS_SELECT_1_PIN 8
 
-#define PROX_1_PIN A1
-#define PROX_2_PIN A2
-#define PROX_3_PIN A3
+#define PROX_0_PIN A1
+#define PROX_1_PIN A2
+#define PROX_2_PIN A3
 
 #define RED_PIN 5
 #define GREEN_PIN 6

@@ -1,6 +1,7 @@
+// returns distance in cm (not 100% percicse)
 int measureProxSensor (int pin)
 {
-    int val = analogRead(PROX_1_PIN);
+    int val = analogRead(pin);
 
     if (val <= 80)
     {
