@@ -17,6 +17,14 @@ void colorsens_setup()
     pinMode(COLOR_SENS_SELECT_0_PIN, OUTPUT);
     pinMode(COLOR_SENS_SELECT_1_PIN, OUTPUT);
 
+    // TODO : should calibrate on startup, but for the sake of easy debug,
+    // it is disabled for now
+
+    //colorsens_calibrate();
+}
+
+void colorsens_calibrate()
+{
     colorsens_activate(&colorSensor0);
     colorSensor0.init();
     colorSensor0.calibrate();
@@ -25,10 +33,9 @@ void colorsens_setup()
     colorSensor1.init();
     colorSensor1.calibrate();
 
-    // TODO : activate last color sensor
-    // colorsens_activate(&colorSensor2);
-    // colorSensor2.init();
-    // colorSensor2.calibrate();
+    colorsens_activate(&colorSensor2);
+    colorSensor2.init();
+    colorSensor2.calibrate();
 }
 
 void colorsens_activate(ADJDS311* sens)
@@ -56,7 +63,7 @@ void colorsens_activate(ADJDS311* sens)
         digitalWrite(COLOR_SENS_SELECT_1_PIN, HIGH);
     }
 
-    delay(3);
+    delay(5);
 
     currently_active = sens;
 }
@@ -125,9 +132,8 @@ void colorsens_debug()
     Serial.print("s1 = ");
     colorsens_debug_sens(&colorSensor1);
 
-    // TODO : activate last color sensor
-    // Serial.print("s2 = ");
-    // colorsens_debug_sens(&colorSensor2);
+    Serial.print("s2 = ");
+    colorsens_debug_sens(&colorSensor2);
 }
 
 void colorsens_debug_sens(ADJDS311* sens)
@@ -137,7 +143,7 @@ void colorsens_debug_sens(ADJDS311* sens)
 
     if (match != -1) { Serial.print(" "); }
     Serial.print(match);
-    Serial.print(" <~~ ");
+    Serial.print(" ~ ");
     print3Digit(color.red);
     Serial.print(" ");
     print3Digit(color.green);
@@ -146,18 +152,4 @@ void colorsens_debug_sens(ADJDS311* sens)
     Serial.print(" ");
     print3Digit(color.clear);
     Serial.print("\n");
-}
-
-void print3Digit(int num)
-{
-    if (num < 10)
-    {
-        Serial.print("  ");
-    }
-    else if (num < 100)
-    {
-        Serial.print(" ");
-    }
-
-    Serial.print(num);
 }

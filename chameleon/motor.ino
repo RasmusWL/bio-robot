@@ -39,5 +39,5 @@ void __setMotorSpeed(int newSpeed, int oldSpeed, char SPEED_PIN, char DIR_PIN)
         digitalWrite(DIR_PIN, FORWARDS);
     }
 
-    analogWrite(SPEED_PIN, newSpeed);
+    analogWrite(SPEED_PIN, abs(newSpeed) );
 }

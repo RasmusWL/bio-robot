@@ -68,7 +68,7 @@ void led_disco()
     _green = 0;
     _blue = 0;
 
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 5; i++)
     {
         led_transition(255,0,0);
         delay(5);
