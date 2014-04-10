@@ -1,7 +1,7 @@
 /* PIN LAYOUT:
  *
  * ANALOG:
- *   0:  O  Color Sensor Select 1 (DIGITAL)
+ *   0:
  *   1:  I  Proximity Sensor 1
  *   2:  I  Proximity Sensor 2
  *   3:  I  Proximity Sensor 3
@@ -13,11 +13,11 @@
  *   1:     [is unusable due to serial connection]
  *   2:  I  Left Encoder A (interrupt 0)
  *  ~3:  I  Right Encoder A (interrupt 1)
- *   4:  I  Left Encoder B
+ *   4:  I  Left/Right Encoder B (only one encoder has a working B output)
  *  ~5:  ~  Red LED   [longer duty cycle - http://arduino.cc/en/Reference/AnalogRead]
  *  ~6:  ~  Green LED [longer duty cycle - http://arduino.cc/en/Reference/AnalogRead]
- *   7:  I  Right Encoder B
- *   8:  O  Color Sensor Select 2
+ *   7:  O  Color Sensor Select 0
+ *   8:  O  Color Sensor Select 1
  *  ~9:  ~  Blue LED
  * ~10:  ~  Left Motor speed
  * ~11:  ~  Right Motor speed
@@ -25,7 +25,7 @@
  *  13:  O  Right Motor dir
  */
 
-#define COLOR_SENS_SELECT_0_PIN A0
+#define COLOR_SENS_SELECT_0_PIN 7
 #define COLOR_SENS_SELECT_1_PIN 8
 
 #define PROX_0_PIN A1
@@ -40,7 +40,7 @@
 #define ENCODER_LEFT_B  4
 
 #define ENCODER_RIGHT_A  3
-#define ENCODER_RIGHT_B  7
+//#define ENCODER_RIGHT_B  7
 
 #define LEFT_MOTOR_SPEED_PIN 10
 #define LEFT_MOTOR_DIR_PIN 12
