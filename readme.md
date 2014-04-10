@@ -18,7 +18,7 @@ It currently works so you can send "debug" commands to it:
 
 * `D` -- **Disco time!**; have a party!
 
-* `L?` -- **LED test**; Display one colour on the LEDs, either `R` `G` `B` or `W` for white, `D` for off.
+* `L?` -- **LED test**; Display one colour on the LEDs, either `R` `G` `B` or `W` for white, `D` for off. and also use `0-5` for colours below
 
 ## Colours
 
