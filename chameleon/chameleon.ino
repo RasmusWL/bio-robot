@@ -42,21 +42,21 @@ void loop()
         print3Digit(prox2CM);
         Serial.print("\n");
     }
-    else if ( cmd == 67 ) // C
+    else if ( cmd == 'C' )
     {
         char cmd = Serial.read();
 
-        if ( cmd == 67 ) // C
+        if ( cmd == 'C' )
         {
             colorsens_calibrate();
         }
-        else if (cmd == 77 ) // M
+        else if (cmd == 'M' )
         {
             Serial.println("Color sensors debug");
             colorsens_debug();
         }
     }
-    else if ( cmd == 77 ) // M
+    else if ( cmd == 'M' )
     {
         int leftSpeed = Serial.parseInt();
         Serial.read(); // the comma
@@ -65,9 +65,19 @@ void loop()
         motor_setLeftSpeed(leftSpeed);
         motor_setRightSpeed(rightSpeed);
     }
-    else if ( cmd == 68 ) // D
+    else if ( cmd == 'D' )
     {
         led_disco();
+    }
+    else if ( cmd == 'L' )
+    {
+        char cmd = Serial.read();
+
+        if      ( cmd == 'R' ) { led_setLED(255,0,0); }
+        else if ( cmd == 'G' ) { led_setLED(0,255,0); }
+        else if ( cmd == 'B' ) { led_setLED(0,0,255); }
+        else if ( cmd == 'D' ) { led_setLED(0,0,0); }
+        else if ( cmd == 'W' ) { led_setLED(255,255,255); }
     }
 }
 

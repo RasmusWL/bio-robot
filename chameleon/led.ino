@@ -7,6 +7,8 @@ void led_setup()
     pinMode(RED_PIN, OUTPUT);
     pinMode(GREEN_PIN, OUTPUT);
     pinMode(BLUE_PIN, OUTPUT);
+
+    led_setLED(0,0,0);
 }
 
 void led_showColour(int color)
@@ -71,18 +73,14 @@ void led_disco()
     for (int i = 0; i < 5; i++)
     {
         led_transition(255,0,0);
-        delay(5);
         led_transition(255,255,0);
-        delay(5);
         led_transition(0,255,0);
-        delay(5);
         led_transition(0,255,255);
-        delay(5);
         led_transition(0,0,255);
-        delay(5);
         led_transition(255,0,255);
-        delay(5);
     }
+
+    led_setLED(0,0,0);
 }
 
 void led_transition(int newRed, int newGreen, int newBlue)
