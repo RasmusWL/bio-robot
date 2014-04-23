@@ -66,9 +66,13 @@ void loop()
         }
         else if (cmd == 'M' || cmd == 'm' )
         {
-            Serial.println("Color sensors debug");
             colorsens_debug();
         }
+        else if (cmd == 'A' || cmd == 'a' )
+        {
+            colorsens_activate_showoff();
+        }
+        else { err(); return; }
     }
     else if ( cmd == 'M' || cmd == 'm' )
     {

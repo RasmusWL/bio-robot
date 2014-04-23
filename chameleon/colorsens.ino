@@ -34,8 +34,26 @@ void colorsens_calibrate()
     colorSensor1.calibrate();
 
     colorsens_activate(&colorSensor2);
-    colorSensor2.init();
-    colorSensor2.calibrate();
+    // colorSensor2.init();
+    // colorSensor2.calibrate();
+}
+
+void colorsens_activate_showoff()
+{
+    Serial.println("Activating 0");
+    colorsens_activate(&colorSensor0);
+    delay(1000);
+
+    Serial.println("Activating 1");
+    colorsens_activate(&colorSensor1);
+    delay(1000);
+
+    Serial.println("Activating 2");
+    colorsens_activate(&colorSensor2);
+    delay(1000);
+
+    Serial.println("Activating 3");
+    colorsens_activate(NULL);
 }
 
 void colorsens_activate(ADJDS311* sens)
@@ -126,14 +144,15 @@ int colorsens_measure(int num)
 
 void colorsens_debug()
 {
+    Serial.println("Color sensors debug");
     Serial.print("s0 = ");
     colorsens_debug_sens(&colorSensor0);
 
     Serial.print("s1 = ");
     colorsens_debug_sens(&colorSensor1);
 
-    Serial.print("s2 = ");
-    colorsens_debug_sens(&colorSensor2);
+    // Serial.print("s2 = ");
+    // colorsens_debug_sens(&colorSensor2);
 }
 
 void colorsens_debug_sens(ADJDS311* sens)
