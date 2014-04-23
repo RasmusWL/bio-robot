@@ -40,20 +40,30 @@ void colorsens_calibrate()
 
 void colorsens_activate_showoff()
 {
+    int delay_time = 2000;
+
     Serial.println("Activating 0");
     colorsens_activate(&colorSensor0);
-    delay(1000);
+    delay(delay_time);
 
     Serial.println("Activating 1");
     colorsens_activate(&colorSensor1);
-    delay(1000);
+    delay(delay_time);
 
     Serial.println("Activating 2");
     colorsens_activate(&colorSensor2);
-    delay(1000);
+    delay(delay_time);
 
     Serial.println("Activating 3");
     colorsens_activate(NULL);
+}
+
+void colorsens_activate_special(int num)
+{
+    if      (num == 0) { colorsens_activate(&colorSensor0); }
+    else if (num == 1) { colorsens_activate(&colorSensor1); }
+    else if (num == 2) { colorsens_activate(&colorSensor2); }
+    else               { colorsens_activate(NULL); }
 }
 
 void colorsens_activate(ADJDS311* sens)

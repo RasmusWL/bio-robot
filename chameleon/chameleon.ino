@@ -68,6 +68,11 @@ void loop()
         {
             colorsens_debug();
         }
+        else if (cmd == 'S' || cmd == 's' )
+        {
+            int num = Serial.parseInt();
+            colorsens_activate_special(num);
+        }
         else if (cmd == 'A' || cmd == 'a' )
         {
             colorsens_activate_showoff();
