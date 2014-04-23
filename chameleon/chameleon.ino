@@ -7,6 +7,9 @@
 
 #define DEBUG false
 
+volatile int leftCount;
+volatile int rightCount;
+
 void setup()
 {
     Serial.begin(9600);

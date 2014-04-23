@@ -1,10 +1,7 @@
-volatile int leftCount;
-volatile int rightCount;
-
 void encoder_setup()
 {
     pinMode(ENCODER_LEFT_A, INPUT);
-    pinMode(ENCODER_LEFT_B, INPUT);
+    //pinMode(ENCODER_LEFT_B, INPUT);
 
     pinMode(ENCODER_RIGHT_A, INPUT);
     //pinMode(ENCODER_RIGHT_B, INPUT);
