@@ -1,7 +1,7 @@
 /* PIN LAYOUT:
  *
  * ANALOG:
- *   0:
+ *   0:  O  LED power on/off
  *   1:  I  Proximity Sensor 1
  *   2:  I  Proximity Sensor 2
  *   3:  I  Proximity Sensor 3
@@ -32,6 +32,7 @@
 #define PROX_1_PIN A2
 #define PROX_2_PIN A3
 
+#define LED_ON_PIN A0
 #define RED_PIN 5
 #define GREEN_PIN 6
 #define BLUE_PIN 9

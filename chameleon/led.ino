@@ -1,6 +1,8 @@
 #define LED_RED_MAX   100
-#define LED_GREEN_MAX  75
-#define LED_BLUE_MAX  130
+#define LED_GREEN_MAX 80
+#define LED_BLUE_MAX  120
+
+boolean _led_off;
 
 void led_setup()
 {
@@ -8,6 +10,9 @@ void led_setup()
     pinMode(GREEN_PIN, OUTPUT);
     pinMode(BLUE_PIN, OUTPUT);
 
+    pinMode(LED_ON_PIN, OUTPUT);
+
+    _led_off = false;
     led_setLED(0,0,0);
 }
 
@@ -28,15 +33,29 @@ void led_showColour(int color)
  *   a low absolute value, they look strange, so we cap
  *   them with the LED_MAX value.
  */
+
 void led_setLED(int red, int green, int blue)
 {
-  int redOut   = map(red,   0,255, 0,LED_RED_MAX);
-  int greenOut = map(green, 0,255, 0,LED_GREEN_MAX);
-  int blueOut  = map(blue,  0,255, 0,LED_BLUE_MAX);
+    if ( ! _led_off && red == 0 && green == 0 && blue == 0 )
+    {
+        digitalWrite(LED_ON_PIN, LOW);
+        _led_off == true;
+        delay(3);
+    }
+    else if ( _led_off )
+    {
+        digitalWrite(LED_ON_PIN, HIGH);
+        _led_off = false;
+        delay(3);
+    }
 
-  analogWrite(RED_PIN,   255-redOut);
-  analogWrite(GREEN_PIN, 255-greenOut);
-  analogWrite(BLUE_PIN,  255-blueOut);
+    int redOut   = map(red,   0,255, 0,LED_RED_MAX);
+    int greenOut = map(green, 0,255, 0,LED_GREEN_MAX);
+    int blueOut  = map(blue,  0,255, 0,LED_BLUE_MAX);
+
+    analogWrite(RED_PIN,   255-redOut);
+    analogWrite(GREEN_PIN, 255-greenOut);
+    analogWrite(BLUE_PIN,  255-blueOut);
 }
 
 int _red = 0;
