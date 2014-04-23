@@ -25,6 +25,17 @@ void setup()
     {
         actionHistory[i] = -1;
     }
+
+    Serial.println("Ready");
+}
+
+void err()
+{
+    while (Serial.available() != 0)
+    {
+        Serial.read();
+    }
+    Serial.println("err");
 }
 
 void loop()
@@ -87,7 +98,26 @@ void loop()
         else if ( cmd == '3' ) { led_showColour(3); }
         else if ( cmd == '4' ) { led_showColour(4); }
         else if ( cmd == '5' ) { led_showColour(5); }
+        else { err(); return; }
     }
+    else if (cmd == 'E' || cmd == 'e' )
+    {
+        int oldLeft = leftCount;
+        int oldRight = rightCount;
+
+        delay(1000);
+
+        int deltaLeft = leftCount - oldLeft;
+        int deltaRight = rightCount - oldRight;
+
+        Serial.print(deltaLeft);
+        Serial.print(" | ");
+        Serial.print(deltaRight);
+        Serial.print("\n");
+    }
+    else { err(); return; }
+
+    Serial.println("done");
 }
 
 
