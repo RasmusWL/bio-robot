@@ -40,6 +40,7 @@ void led_setLED(int red, int green, int blue)
     {
         digitalWrite(LED_ON_PIN, LOW);
         _led_off == true;
+        _led_off = true;
         delay(3);
     }
     else if ( _led_off )
