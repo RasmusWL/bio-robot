@@ -1,6 +1,6 @@
-#define LED_RED_MAX   100
-#define LED_GREEN_MAX 80
-#define LED_BLUE_MAX  120
+#define LED_RED_MAX   150
+#define LED_GREEN_MAX 120
+#define LED_BLUE_MAX  190
 
 boolean _led_off;
 
