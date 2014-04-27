@@ -25,6 +25,11 @@ void led_showColour(int color)
     led_setLED(red,green,blue);
 }
 
+void led_off()
+{
+    led_setLED(0,0,0);
+}
+
 /* Set all the LEDs to a colour
  * - values must be between 0-255 (both included)
  *
@@ -36,10 +41,9 @@ void led_showColour(int color)
 
 void led_setLED(int red, int green, int blue)
 {
-    if ( ! _led_off && red == 0 && green == 0 && blue == 0 )
+    if ( red == 0 && green == 0 && blue == 0 )
     {
         digitalWrite(LED_ON_PIN, LOW);
-        _led_off == true;
         _led_off = true;
         delay(3);
     }
