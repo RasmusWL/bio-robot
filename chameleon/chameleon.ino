@@ -77,6 +77,18 @@ void loop()
         {
             colorsens_activate_showoff();
         }
+        else if (cmd == '0' )
+        {
+            colorsens_debug_sens(0);
+        }
+        else if (cmd == '1' )
+        {
+            colorsens_debug_sens(1);
+        }
+        else if (cmd == '2' )
+        {
+            colorsens_debug_sens(2);
+        }
         else { err(); return; }
     }
     else if ( cmd == 'M' || cmd == 'm' )
