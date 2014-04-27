@@ -1,8 +1,8 @@
 #define FORWARDS HIGH
 #define BACKWARDS LOW
 
-int leftSpeed = 0;
-int rightSpeed = 0;
+int _leftSpeed = 0;
+int _rightSpeed = 0;
 
 void motor_setup()
 {
@@ -18,14 +18,19 @@ void motor_setup()
 
 void motor_setLeftSpeed(int newSpeed)
 {
-    __setMotorSpeed(newSpeed, leftSpeed, LEFT_MOTOR_SPEED_PIN, LEFT_MOTOR_DIR_PIN);
-    leftSpeed = newSpeed;
+    newSpeed = constrain(newSpeed, -255, 255);
+
+    __setMotorSpeed(newSpeed, _leftSpeed, LEFT_MOTOR_SPEED_PIN, LEFT_MOTOR_DIR_PIN);
+    _leftSpeed = newSpeed;
 }
 
 void motor_setRightSpeed(int newSpeed)
 {
-    __setMotorSpeed(newSpeed, rightSpeed, RIGHT_MOTOR_SPEED_PIN, RIGHT_MOTOR_DIR_PIN);
-    rightSpeed = newSpeed;
+    newSpeed = -newSpeed;
+    newSpeed = constrain(newSpeed, -255, 255);
+
+    __setMotorSpeed(newSpeed, _rightSpeed, RIGHT_MOTOR_SPEED_PIN, RIGHT_MOTOR_DIR_PIN);
+    _rightSpeed = newSpeed;
 }
 
 void __setMotorSpeed(int newSpeed, int oldSpeed, char SPEED_PIN, char DIR_PIN)
