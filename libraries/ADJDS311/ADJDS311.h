@@ -57,6 +57,9 @@ class ADJDS311{
 
     RGBC read();
 
+    void printCalibration();
+    void setCalibration(int colorGain, int clearGain);
+
  private:
  	int _led_pin;
 

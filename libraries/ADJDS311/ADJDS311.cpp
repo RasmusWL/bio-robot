@@ -197,6 +197,32 @@ void ADJDS311::calibrateCapacitors(){
 
 }
 
+void ADJDS311::printCalibration()
+{
+  int colorGain = readRegisterInt(INT_RED_LO);
+  int clearGain = readRegisterInt(INT_CLEAR_LO);
+
+  Serial.print(colorGain);
+  Serial.print(",");
+  Serial.print(clearGain);
+  Serial.print("\n");
+}
+
+void ADJDS311::setCalibration(int colorGain, int clearGain)
+{
+  int highval = 2048;
+  writeRegister((unsigned char)((highval & 0x1FFF) >> 8), INT_RED_HI);
+  writeRegister((unsigned char)((highval & 0x1FFF) >> 8), INT_BLUE_HI);
+  writeRegister((unsigned char)((highval & 0x1FFF) >> 8), INT_GREEN_HI);
+  writeRegister((unsigned char)((highval & 0x1FFF) >> 8), INT_CLEAR_HI);
+
+  writeInt(INT_CLEAR_LO, clearGain);
+
+  writeInt(INT_RED_LO, colorGain);
+  writeInt(INT_GREEN_LO, colorGain);
+  writeInt(INT_BLUE_LO, colorGain);
+}
+
 /* writeInt() - This function writes a 12-bit value
 to the LO and HI integration registers */
 void ADJDS311::writeInt(int address, int gain){
