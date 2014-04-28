@@ -16,6 +16,12 @@ void motor_setup()
     motor_setRightSpeed(0);
 }
 
+void motor_setSpeeds(int leftSpeed, int rightSpeed)
+{
+    motor_setLeftSpeed(leftSpeed);
+    motor_setRightSpeed(rightSpeed);
+}
+
 void motor_setLeftSpeed(int newSpeed)
 {
     newSpeed = constrain(newSpeed, -255, 255);
@@ -45,4 +51,14 @@ void __setMotorSpeed(int newSpeed, int oldSpeed, char SPEED_PIN, char DIR_PIN)
     }
 
     analogWrite(SPEED_PIN, abs(newSpeed) );
+}
+
+void motor_stop()
+{
+    motor_setLeftSpeed ( (_leftSpeed/abs(_leftSpeed) ) * -255 );
+    motor_setRightSpeed ( (_rightSpeed/abs(_rightSpeed) ) * -255 );
+
+    delay(20);
+
+    motor_setSpeeds(0,0);
 }
