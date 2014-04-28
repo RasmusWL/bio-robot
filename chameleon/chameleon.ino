@@ -13,6 +13,7 @@ volatile int rightCount;
 void setup()
 {
     Serial.begin(9600);
+    Serial.println("Initializing");
 
     // ------------------------------------------------------------ //
 
@@ -23,22 +24,186 @@ void setup()
 
     for(int i = 0; i < HISTORY_LENGTH; i++)
     {
-        actionHistory[i] = -1;
+        action_history[i].id = 0;
     }
 
     Serial.println("Ready");
 }
 
-void err()
+void loop()
 {
-    while (Serial.available() != 0)
-    {
-        Serial.read();
-    }
-    Serial.println("err");
+    if ( DEBUG ) { debug_loop(); }
+    else         { test_loop(); }
 }
 
-void loop()
+robot_info_t robot_info;
+
+void real_loop()
+{
+    info_t info;
+
+    info.prox0CM = measureProxSensor(PROX_0_PIN);
+    info.prox1CM = measureProxSensor(PROX_1_PIN);
+    info.prox2CM = measureProxSensor(PROX_2_PIN);
+    info.color0Match = colorsens_measure(0);
+    info.color1Match = colorsens_measure(1);
+    info.color2Match = colorsens_measure(2);
+
+    action_t action;
+    action.type = ACTION_STRAIGHT;
+    action.param = 10000;
+
+    // ------------------------------------------------------------ //
+
+    locatecolor_action(&info, &action);
+    avoidance_action(&info, &action);
+
+    action_execute(&action);
+}
+
+#define TURN_CIRCUMFERENCE 36.13
+
+void turnForMe(int leftSpeed, int rightSpeed, int turnTicks)
+{
+    encoder_reset();
+
+    motor_setLeftSpeed(leftSpeed);
+    motor_setRightSpeed(rightSpeed);
+
+    while ( rightCount < turnTicks || leftCount < turnTicks )
+    {
+
+    }
+
+    motor_stop();
+}
+
+
+int proxHit = 0;
+int lastColorHiddenOn = -1;
+int leftSpeed = 90;
+int rightSpeed = 100;
+
+int lastLeftGoal = 0;
+int lastRightGoal = 0;
+
+bool forwards = false;
+
+void test_loop()
+{
+    int prox1CM = measureProxSensor(PROX_1_PIN);
+    int prox2CM = measureProxSensor(PROX_2_PIN);
+
+    int color1Match = -1;//colorsens_measure(1);
+
+    if (color1Match != -1)
+    {
+        Serial.print("matched color");
+        Serial.println(color1Match);
+
+        if ( color1Match != lastColorHiddenOn )
+        {
+            Serial.println("showing it");
+
+            motor_stop();
+            lastColorHiddenOn = color1Match;
+            led_showColour(color1Match);
+            delay(2000);
+            return;
+        }
+    }
+    else if (lastColorHiddenOn != -1)
+    {
+        Serial.println("turning it off");
+        led_setLED(0,0,0);
+        lastColorHiddenOn = -1;
+    }
+
+    if (prox1CM <= 23 || prox2CM <= 23 )
+    {
+        proxHit ++;
+    }
+
+    if (proxHit >= 2)
+    {
+        Serial.println("need to turn");
+        if ( forwards )
+        {
+            motor_stop();
+            forwards = false;
+        }
+
+        int ticks = random(50, 100);
+        bool turnCCW = true;
+        if ( abs(prox1CM - prox2CM) > 10 )
+        {
+            turnCCW = prox1CM < prox2CM;
+        }
+        else
+        {
+            turnCCW = random(0, 1) == 0;
+        }
+
+        if (turnCCW) { turnForMe(50,-50,ticks); }
+        else         { turnForMe(-50,50,ticks); }
+
+        proxHit = 0;
+    }
+    else
+    {
+        Serial.println("forwards!");
+        forwards = true;
+
+        encoder_reset();
+        delay(50);
+
+        int leftGoal = 40;
+        int rightGoal = 40;
+        int change = 2;
+
+        if ( prox1CM <= 35 )
+        {
+            if ( lastRightGoal != 20 )
+            {
+                rightSpeed = rightSpeed / 2;
+            }
+            rightGoal = 20;
+        }
+        else if ( prox2CM <= 35 )
+        {
+            if ( lastLeftGoal != 20 )
+            {
+                leftSpeed = leftSpeed / 2;
+            }
+            leftGoal = 20;
+        }
+
+        if ( leftCount < leftGoal - change )
+        {
+            leftSpeed += change;
+        }
+        else if (leftCount > leftGoal + change )
+        {
+            leftSpeed -= change;
+        }
+        motor_setLeftSpeed(leftSpeed);
+
+        if ( rightCount < rightGoal - change )
+        {
+            rightSpeed += change;
+        }
+        else if (rightCount > rightGoal + change )
+        {
+            rightSpeed -= change;
+        }
+        motor_setRightSpeed(rightSpeed);
+
+        lastLeftGoal = leftGoal;
+        lastRightGoal = rightGoal;
+    }
+}
+
+void debug_loop()
 {
     if (Serial.available() == 0) { delay(100); return; }
 
@@ -155,9 +320,53 @@ void loop()
         Serial.print(deltaRight);
         Serial.print("\n");
     }
+    else if (cmd == 'T' || cmd == 't' )
+    {
+        int ticks = Serial.parseInt();
+
+
+
+        encoder_reset();
+
+        if ( cmd == 'T' )
+        {
+            motor_setLeftSpeed(-50);
+            motor_setRightSpeed(50);
+        }
+        else
+        {
+            motor_setLeftSpeed(50);
+            motor_setRightSpeed(-50);
+        }
+
+        while ( rightCount < ticks || leftCount < ticks )
+        {
+
+        }
+        motor_setLeftSpeed(0);
+        motor_setRightSpeed(0);
+
+        Serial.print("l=");
+        Serial.print(leftCount);
+        Serial.print(" r=");
+        Serial.print(rightCount);
+        Serial.print("\n");
+    }
+
+    // backwards :)
+    // m-30,-50
     else { err(); return; }
 
     Serial.println("done");
+}
+
+void err()
+{
+    while (Serial.available() != 0)
+    {
+        Serial.read();
+    }
+    Serial.println("err");
 }
 
 
