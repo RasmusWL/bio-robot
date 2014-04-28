@@ -56,6 +56,25 @@ void loop()
         print3Digit(prox2CM);
         Serial.print("\n");
     }
+    else if ( cmd == 'V' || cmd == 'v' )
+    {
+        Serial.print("0= ");
+        colorsens_printCalibration(0);
+        Serial.print("1= ");
+        colorsens_printCalibration(1);
+        Serial.print("2= ");
+        colorsens_printCalibration(2);
+    }
+    else if ( cmd == 'X' || cmd == 'x' )
+    {
+        int num = Serial.parseInt();
+        Serial.read();
+        int colorGain = Serial.parseInt();
+        Serial.read();
+        int clearGain = Serial.parseInt();
+
+        colorsens_setCalibration(num,colorGain,clearGain);
+    }
     else if ( cmd == 'C' || cmd == 'c' )
     {
         char cmd = Serial.read();

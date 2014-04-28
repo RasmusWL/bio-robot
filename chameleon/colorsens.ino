@@ -96,7 +96,7 @@ void colorsens_activate(ADJDS311* sens)
         digitalWrite(COLOR_SENS_SELECT_1_PIN, HIGH);
     }
 
-    delay(5);
+    delay(7);
 
     currently_active = sens;
 }
@@ -191,4 +191,28 @@ void colorsens_debug_sens(int num)
     Serial.print(" ");
     print3Digit(color.clear);
     Serial.print("\n");
+}
+
+void colorsens_printCalibration(int num)
+{
+    ADJDS311* sens;
+    if      (num == 0) { sens = &colorSensor0; }
+    else if (num == 1) { sens = &colorSensor1; }
+    else if (num == 2) { sens = &colorSensor2; }
+
+    colorsens_activate( sens );
+
+    sens->printCalibration();
+}
+
+void colorsens_setCalibration(int num, int colorGain, int clearGain)
+{
+    ADJDS311* sens;
+    if      (num == 0) { sens = &colorSensor0; }
+    else if (num == 1) { sens = &colorSensor1; }
+    else if (num == 2) { sens = &colorSensor2; }
+
+    colorsens_activate( sens );
+
+    sens->setCalibration(colorGain,clearGain);
 }
