@@ -81,16 +81,22 @@ void turnForMe(int leftSpeed, int rightSpeed, int turnTicks)
 
 int proxHit = 0;
 int lastColorHiddenOn = -1;
-int leftSpeed = 90;
-int rightSpeed = 100;
+int leftSpeed = 100;
+int rightSpeed = 90;
 
-int lastLeftGoal = 0;
-int lastRightGoal = 0;
+int leftGoal = 40;
+int rightGoal = 40;
 
 bool forwards = false;
 
+#define COURSE_TIME 10
+int courseLeftTicks = 0;
+
+int currentTurningDirection = 0;
+
 void test_loop()
 {
+    int prox0CM = measureProxSensor(PROX_0_PIN);
     int prox1CM = measureProxSensor(PROX_1_PIN);
     int prox2CM = measureProxSensor(PROX_2_PIN);
 
@@ -106,6 +112,8 @@ void test_loop()
             Serial.println("showing it");
 
             motor_stop();
+            forwards = false;
+            currentTurningDirection = 0;
             lastColorHiddenOn = color1Match;
             led_showColour(color1Match);
             delay(2000);
@@ -114,18 +122,24 @@ void test_loop()
     }
     else if (lastColorHiddenOn != -1)
     {
-        Serial.println("turning it off");
+        Serial.println("turning LED it off");
         led_setLED(0,0,0);
         lastColorHiddenOn = -1;
     }
 
-    if (prox1CM <= 23 || prox2CM <= 23 )
+    int sideDist = 10;
+
+    if ( prox0CM <= sideDist || prox1CM <= 20 || prox2CM <= sideDist )
     {
         proxHit ++;
     }
 
-    if (proxHit >= 2)
+    if (proxHit >= 2 )
     {
+        int turningDirection = 1;
+
+        if ( random(0, 2) == 0 ) { turningDirection = -1; }
+
         Serial.println("need to turn");
         if ( forwards )
         {
@@ -133,50 +147,111 @@ void test_loop()
             forwards = false;
         }
 
-        int ticks = random(50, 100);
-        bool turnCCW = true;
-        if ( abs(prox1CM - prox2CM) > 10 )
+        int ticks = random(50, 110);
+
+        int minSensNum;
+
+        if ( prox0CM < prox1CM && prox0CM < prox2CM )
         {
-            turnCCW = prox1CM < prox2CM;
+            minSensNum = 0;
+        }
+        else if ( prox1CM < prox0CM && prox1CM < prox2CM )
+        {
+            minSensNum = 1;
         }
         else
         {
-            turnCCW = random(0, 1) == 0;
+            minSensNum = 2;
         }
 
-        if (turnCCW) { turnForMe(50,-50,ticks); }
-        else         { turnForMe(-50,50,ticks); }
+        if ( minSensNum == 0 )
+        {
+            turningDirection = -1;
+        }
+        else if ( minSensNum == 2 )
+        {
+            turningDirection = 1;
+        }
 
-        proxHit = 0;
+        if (currentTurningDirection != 0 )
+        {
+            turningDirection = currentTurningDirection;
+        }
+
+        if (turningDirection == -1) { turnForMe(-90,90,ticks); }
+        else                        { turnForMe(90,-90,ticks); }
+
+
+        proxHit = 1;
+        currentTurningDirection = turningDirection;
     }
     else
     {
-        Serial.println("forwards!");
-        forwards = true;
+        if ( !forwards )
+        {
+            courseLeftTicks = 0;
+            proxHit = 0;
+            currentTurningDirection = 0;
+            forwards = true;
+        }
+
+
+        if ( courseLeftTicks <= 0 )
+        {
+            print3Digit(prox0CM);
+            print3Digit(prox1CM);
+            print3Digit(prox2CM);
+            Serial.print("\n");
+
+            int rn = random(0,10);
+
+            int distToChange = 30;
+
+            int turnMaxGoal = 50;
+            int turnMinGoal = 30;
+
+            int turnMaxSpeed = 100;
+            int turnMinSpeed = 50;
+
+            if ( prox0CM <= distToChange && measureProxSensor(PROX_0_PIN) <= distToChange )
+            {
+                Serial.println("forwards >");
+                leftGoal = turnMaxGoal;
+                rightGoal = turnMinGoal;
+
+                leftSpeed = turnMaxSpeed;
+                rightSpeed = turnMinSpeed;
+            }
+            else if ( prox2CM <= distToChange && measureProxSensor(PROX_2_PIN) <= distToChange )
+            {
+                Serial.println("forwards <");
+                leftGoal = turnMinGoal;
+                rightGoal = turnMaxGoal;
+
+                leftSpeed = turnMinSpeed;
+                rightSpeed = turnMaxSpeed;
+            }
+            else
+            {
+                Serial.println("forwards ^");
+                leftGoal = 40;
+                rightGoal = 40;
+
+                leftSpeed = 90;
+                rightSpeed = 90;
+            }
+
+            courseLeftTicks = COURSE_TIME;
+
+            motor_setSpeeds(leftSpeed, rightSpeed);
+
+            return;
+        }
 
         encoder_reset();
         delay(50);
 
-        int leftGoal = 40;
-        int rightGoal = 40;
         int change = 2;
-
-        if ( prox1CM <= 35 )
-        {
-            if ( lastRightGoal != 20 )
-            {
-                rightSpeed = rightSpeed / 2;
-            }
-            rightGoal = 20;
-        }
-        else if ( prox2CM <= 35 )
-        {
-            if ( lastLeftGoal != 20 )
-            {
-                leftSpeed = leftSpeed / 2;
-            }
-            leftGoal = 20;
-        }
 
         if ( leftCount < leftGoal - change )
         {
@@ -186,7 +261,6 @@ void test_loop()
         {
             leftSpeed -= change;
         }
-        motor_setLeftSpeed(leftSpeed);
 
         if ( rightCount < rightGoal - change )
         {
@@ -196,10 +270,10 @@ void test_loop()
         {
             rightSpeed -= change;
         }
-        motor_setRightSpeed(rightSpeed);
 
-        lastLeftGoal = leftGoal;
-        lastRightGoal = rightGoal;
+        motor_setSpeeds(leftSpeed, rightSpeed);
+
+        courseLeftTicks--;
     }
 }
 
