@@ -2,22 +2,22 @@
 
 PROGMEM const unsigned char DETECTION_LOW_VALS[NUM_COLORS * 4] =
 {
-  230, 142,  70, 112, // RED
-  150, 212, 100, 112, // GREEN
-  130, 211, 185, 140, // BLUE
-  250, 250, 250, 242, // WHITE
+  240, 110,  60, 110, // RED
+  130, 170,  70, 105, // GREEN
+  125, 190, 190, 130, // BLUE
+  240, 240, 220, 210, // WHITE
   217, 200,  80, 162, // ORANGE
-  245, 245, 116, 180  // YELLOW
+  240, 240, 110, 190  // YELLOW
 };
 
 PROGMEM const unsigned char DETECTION_HIGH_VALS[NUM_COLORS * 4] =
 {
-  255, 171,  91, 133, // RED
-  186, 255, 124, 154, // GREEN
-  176, 255, 243, 171, // BLUE
+  255, 170, 105, 165, // RED
+  174, 255, 115, 154, // GREEN
+  175, 255, 240, 170, // BLUE
   255, 255, 255, 255, // WHITE
   255, 255, 110, 187, // ORANGE
-  255, 255, 157, 253  // YELLOW
+  255, 255, 140, 230  // YELLOW
 };
 
 PROGMEM const unsigned char LED_VALS[NUM_COLORS * 3] =
