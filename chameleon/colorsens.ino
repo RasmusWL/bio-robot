@@ -22,7 +22,12 @@ void colorsens_setup()
 
     //colorsens_calibrate();
 
-    colorsens_activate(NULL);
+
+    colorsens_setCalibration(0,291,107);
+    colorsens_setCalibration(1,177,65);
+    colorsens_setCalibration(2,160,65);
+
+    colorsens_off();
 }
 
 void colorsens_calibrate()
@@ -101,8 +106,14 @@ void colorsens_activate(ADJDS311* sens)
     currently_active = sens;
 }
 
-RGBC colorsens_read(ADJDS311* sens)
+RGBC colorsens_read(int num)
 {
+    ADJDS311* sens;
+
+    if      (num == 0) { sens = &colorSensor0; }
+    else if (num == 1) { sens = &colorSensor1; }
+    else if (num == 2) { sens = &colorSensor2; }
+
     colorsens_activate(sens);
 
     RGBC color = sens->read();
@@ -147,13 +158,7 @@ int colorsens_findColorMatch(RGBC color)
 
 int colorsens_measure(int num)
 {
-    ADJDS311* sens;
-
-    if      (num == 0) { sens = &colorSensor0; }
-    else if (num == 1) { sens = &colorSensor1; }
-    else if (num == 2) { sens = &colorSensor2; }
-
-    RGBC color = colorsens_read(sens);
+    RGBC color = colorsens_read(num);
     return colorsens_findColorMatch(color);
 }
 
@@ -168,16 +173,19 @@ void colorsens_debug()
 
     Serial.print("s2 = ");
     colorsens_debug_sens(2);
+
+    colorsens_off();
 }
+
+void colorsens_off()
+{
+    colorsens_activate(NULL);
+}
+
 
 void colorsens_debug_sens(int num)
 {
-    ADJDS311* sens;
-    if      (num == 0) { sens = &colorSensor0; }
-    else if (num == 1) { sens = &colorSensor1; }
-    else if (num == 2) { sens = &colorSensor2; }
-
-    RGBC color = colorsens_read(sens);
+    RGBC color = colorsens_read(num);
     int match = colorsens_findColorMatch(color);
 
     if (match != -1) { Serial.print(" "); }
