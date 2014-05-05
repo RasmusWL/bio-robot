@@ -17,15 +17,9 @@ void colorsens_setup()
     pinMode(COLOR_SENS_SELECT_0_PIN, OUTPUT);
     pinMode(COLOR_SENS_SELECT_1_PIN, OUTPUT);
 
-    // TODO : should calibrate on startup, but for the sake of easy debug,
-    // it is disabled for now
-
-    //colorsens_calibrate();
-
-
-    colorsens_setCalibration(0,291,107);
-    colorsens_setCalibration(1,177,65);
-    colorsens_setCalibration(2,160,65);
+    colorsens_setCalibration(0,360,110,2,0,0,5);
+    colorsens_setCalibration(1,185,60,1,3,0,5);
+    colorsens_setCalibration(2,170,62,0,2,1,5);
 
     colorsens_off();
 }
@@ -213,7 +207,9 @@ void colorsens_printCalibration(int num)
     sens->printCalibration();
 }
 
-void colorsens_setCalibration(int num, int colorGain, int clearGain)
+void colorsens_setCalibration(int num, int colorGain, int clearGain,
+                              int colorCapRed, int colorCapGreen,
+                              int colorCapBlue, int colorCapClear)
 {
     ADJDS311* sens;
     if      (num == 0) { sens = &colorSensor0; }
@@ -222,5 +218,68 @@ void colorsens_setCalibration(int num, int colorGain, int clearGain)
 
     colorsens_activate( sens );
 
-    sens->setCalibration(colorGain,clearGain);
+    sens->setCalibration(colorGain,clearGain, colorCapRed, colorCapGreen, colorCapBlue, colorCapClear);
+}
+
+colormatch_t colorsens_measureAll()
+{
+    colormatch_t match;
+
+    match.left = colorsens_measure(2);
+    match.front = colorsens_measure(0);
+    match.right = colorsens_measure(1);
+
+    return match;
+}
+
+void colorsens_readALot(int fromSens, int toSens)
+{
+    int minR = 255;
+    int minG = 255;
+    int minB = 255;
+    int minC = 255;
+
+    int maxR = 0;
+    int maxG = 0;
+    int maxB = 0;
+    int maxC = 0;
+
+    for (int i = 0; i < 20; i ++)
+    {
+        for (int j = fromSens; j <= toSens; j++)
+        {
+            RGBC color = colorsens_read(j);
+            // int match = colorsens_findColorMatch(color);
+
+            minR = min(minR, color.red);
+            minG = min(minG, color.green);
+            minB = min(minB, color.blue);
+            minC = min(minC, color.clear);
+
+            maxR = max(maxR, color.red);
+            maxG = max(maxG, color.green);
+            maxB = max(maxB, color.blue);
+            maxC = max(maxC, color.clear);
+        }
+
+        delay(30);
+    }
+
+    print3Digit(minR);
+    Serial.print(" ");
+    print3Digit(minG);
+    Serial.print(" ");
+    print3Digit(minB);
+    Serial.print(" ");
+    print3Digit(minC);
+    Serial.print("\n");
+
+    print3Digit(maxR);
+    Serial.print(" ");
+    print3Digit(maxG);
+    Serial.print(" ");
+    print3Digit(maxB);
+    Serial.print(" ");
+    print3Digit(maxC);
+    Serial.print("\n");
 }

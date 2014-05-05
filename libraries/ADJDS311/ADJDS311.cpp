@@ -205,10 +205,25 @@ void ADJDS311::printCalibration()
   Serial.print(colorGain);
   Serial.print(",");
   Serial.print(clearGain);
+
+  int colorCapRed = readRegister(CAP_RED);
+  int colorCapGreen = readRegister(CAP_GREEN);
+  int colorCapBlue = readRegister(CAP_BLUE);
+  int colorCapClear = readRegister(CAP_CLEAR);
+
+  Serial.print(colorCapRed);
+  Serial.print(",");
+  Serial.print(colorCapGreen);
+  Serial.print(",");
+  Serial.print(colorCapBlue);
+  Serial.print(",");
+  Serial.print(colorCapClear);
   Serial.print("\n");
 }
 
-void ADJDS311::setCalibration(int colorGain, int clearGain)
+void ADJDS311::setCalibration(int colorGain, int clearGain,
+                              int colorCapRed, int colorCapGreen,
+                              int colorCapBlue, int colorCapClear)
 {
   int highval = 2048;
   writeRegister((unsigned char)((highval & 0x1FFF) >> 8), INT_RED_HI);
@@ -221,6 +236,11 @@ void ADJDS311::setCalibration(int colorGain, int clearGain)
   writeInt(INT_RED_LO, colorGain);
   writeInt(INT_GREEN_LO, colorGain);
   writeInt(INT_BLUE_LO, colorGain);
+
+  writeRegister(colorCapRed, CAP_RED);
+  writeRegister(colorCapGreen, CAP_GREEN);
+  writeRegister(colorCapBlue, CAP_BLUE);
+  writeRegister(colorCapClear, CAP_CLEAR);
 }
 
 /* writeInt() - This function writes a 12-bit value
