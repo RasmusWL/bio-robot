@@ -1,34 +1,34 @@
-#define HISTORY_LENGTH 8
-
-char actionHistory[HISTORY_LENGTH];
-char paramHistory[HISTORY_LENGTH];
-
-struct info_t
-{
-    int proxy0CM;
-    int proxy1CM;
-    int proxy2CM;
-
-    int color0Match;
-    int color1Match;
-    int color2Match;
-};
-
 struct action_t
 {
     char type;
-    char param;
-    char turnPreference;
+    int param;
+    int id;
+};
+
+struct robot_info_t
+{
+    float x;
+    float y;
+    int angle;
 };
 
 #define ACTION_STRAIGHT 0
-// param = none
+// param = max number of CM
 
-#define ACTION_TURN     1
-// param = degrees
+#define ACTION_TURN 1
+// param = way to turn
+#define TURN_WAY_LEFT -1;
+#define TURN_WAY_RIGHT 1;
+
+#define ACTION_STOP 2
+// param = delay in miliseconds
+
+#define ACTION_ONE_WHEEL 3
+#define PARAM_ONE_WHEEL_LEFT 0
+#define PARAM_ONE_WHEEL_RIGHT 1
+// param = which wheel (0 for left, 1 for right)
 
 
-#define SMALLEST_TURN 15
 
-#define STATE_ROAMING  0
-#define STATE_CLR_LOOK 1
+#define HISTORY_LENGTH 8
+action_t action_history[HISTORY_LENGTH];
