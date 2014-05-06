@@ -9,13 +9,12 @@
 void encoder_setup()
 {
     pinMode(ENCODER_LEFT_A, INPUT);
-
     pinMode(ENCODER_RIGHT_A, INPUT);
 
     encoder_reset();
 
-    attachInterrupt(0, leftEncoderEvent, RISING);
-    attachInterrupt(1, rightEncoderEvent, RISING);
+    attachInterrupt(ENCODER_LEFT_A-2, leftEncoderEvent, RISING);
+    attachInterrupt(ENCODER_RIGHT_A-2, rightEncoderEvent, RISING);
 }
 
 void encoder_reset()
