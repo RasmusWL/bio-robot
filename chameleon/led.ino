@@ -25,6 +25,15 @@ void led_showColour(int color)
     led_setLED(red,green,blue);
 }
 
+void led_showDim(itn color)
+{
+    int red   = pgm_read_byte_near(LED_VALS + color*3 + 0);
+    int green = pgm_read_byte_near(LED_VALS + color*3 + 1);
+    int blue  = pgm_read_byte_near(LED_VALS + color*3 + 2);
+
+    led_setLED(red/2,green/2,blue/2);
+}
+
 void led_off()
 {
     led_setLED(0,0,0);
