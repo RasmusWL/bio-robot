@@ -1,19 +1,33 @@
 #include <ADJDS311.h>
 #include <Wire.h>
 #include <avr/pgmspace.h>
+
 #include "pins.h"
 #include "colordata.h"
 #include "actions.h"
+#include "colorsens.h"
+#include "msg.h"
+#include "proximity.h"
+#include "movementdist.h"
 
 #define DEBUG false
+#define BLUETOOTH true
+
+#define STATE_RANDOM_WALK 0
+#define STATE_LOCATE_COLOR 1
+#define STATE_DANGER_SENSE 2
+#define STATE_PANIC 3
+
+void loop_v3();
 
 volatile int leftCount;
 volatile int rightCount;
 
+robot_info_t robot_info;
+
+int state;
 void setup()
 {
-    Serial.begin(9600);
-    Serial.println("Initializing");
 
     // ------------------------------------------------------------ //
 
@@ -21,11 +35,19 @@ void setup()
     motor_setup();
     encoder_setup();
     colorsens_setup();
+    locatecolor_setup();
 
     for(int i = 0; i < HISTORY_LENGTH; i++)
     {
         action_history[i].id = 0;
+        action_history[i].type = 0;
+        action_history[i].param = 0;
     }
+
+    state = STATE_RANDOM_WALK;
+
+    if ( BLUETOOTH ) { bluetooth_setup(); }
+    else             { Serial.begin(9600);  }
 
     Serial.println("Ready");
 }
@@ -33,255 +55,247 @@ void setup()
 void loop()
 {
     if ( DEBUG ) { debug_loop(); }
-    else         { test_loop(); }
+    else         { loop_v3(); }
 }
 
-robot_info_t robot_info;
-
-void real_loop()
+// bluetooth info at https://learn.sparkfun.com/tutorials/using-the-bluesmirf/all
+void bluetooth_setup()
 {
-    info_t info;
+    led_setLED(255,0,0);
+    delay(1000);
 
-    info.prox0CM = measureProxSensor(PROX_0_PIN);
-    info.prox1CM = measureProxSensor(PROX_1_PIN);
-    info.prox2CM = measureProxSensor(PROX_2_PIN);
-    info.color0Match = colorsens_measure(0);
-    info.color1Match = colorsens_measure(1);
-    info.color2Match = colorsens_measure(2);
+    Serial.begin(115200);  // The Bluetooth Mate defaults to 115200bps
+    Serial.print("$");  // Print three times individually
+    Serial.print("$");
+    Serial.print("$");  // Enter command mode
+    delay(100);  // Short delay, wait for the Mate to send back CMD
+    led_setLED(0,0,255);
+    delay(500);
+    Serial.println("U,9600,N");  // Temporarily Change the baudrate to 9600, no parity
+    // delay(2000);
+    // Serial.println("---");
+    delay(200);
+    // 115200 can be too fast at times for NewSoftSerial to relay the data reliably
+    Serial.begin(9600);
 
-    action_t action;
-    action.type = ACTION_STRAIGHT;
-    action.param = 10000;
-
-    // ------------------------------------------------------------ //
-
-    locatecolor_action(&info, &action);
-    avoidance_action(&info, &action);
-
-    action_execute(&action);
-}
-
-#define TURN_CIRCUMFERENCE 36.13
-
-void turnForMe(int leftSpeed, int rightSpeed, int turnTicks)
-{
-    encoder_reset();
-
-    motor_setLeftSpeed(leftSpeed);
-    motor_setRightSpeed(rightSpeed);
-
-    while ( rightCount < turnTicks || leftCount < turnTicks )
+    while ( Serial.available() != 0 )
     {
-
+        Serial.read();
     }
 
-    motor_stop();
+    led_setLED(0,255,0);
+    delay(500);
+    led_off();
 }
 
+// ------------------------------------------------------------ //
 
-int proxHit = 0;
-int lastColorHiddenOn = -1;
-int leftSpeed = 100;
-int rightSpeed = 90;
-
-int leftGoal = 40;
-int rightGoal = 40;
-
-bool forwards = false;
-
-#define COURSE_TIME 10
-int courseLeftTicks = 0;
-
-int currentTurningDirection = 0;
-
-void test_loop()
+void loop_v3()
 {
-    int prox0CM = measureProxSensor(PROX_0_PIN);
-    int prox1CM = measureProxSensor(PROX_1_PIN);
-    int prox2CM = measureProxSensor(PROX_2_PIN);
+    colormatch_t color = colorsens_measureAll();
+    prox_t prox = prox_all_averaged(5, 1);
 
-    int color1Match = -1;//colorsens_measure(1);
+    // Serial.print("state = ");
+    // Serial.println(state);
 
-    if (color1Match != -1)
+    // Serial.print("p");
+    // print3Digit(prox.left);
+    // print3Digit(prox.middle);
+    // print3Digit(prox.right);
+    // Serial.print("\n");
+
+    // Serial.print("   ");
+    // print3Digit(color.front);
+    // Serial.print("   ");
+    // Serial.print("\n");
+
+    // print3Digit(color.left);
+    // Serial.print("   ");
+    // print3Digit(color.right);
+    // Serial.print("\n");
+    // Serial.print("\n");
+
+    action_t lastAction = action_history[0];
+    action_t newAction;
+
+    if ( lastAction.type == ACTION_STRAIGHT || lastAction.type == ACTION_ONE_WHEEL )
     {
-        Serial.print("matched color");
-        Serial.println(color1Match);
-
-        if ( color1Match != lastColorHiddenOn )
+        if ( avoidance_needToStop(prox) )
         {
-            Serial.println("showing it");
+            newAction = {};
+            newAction.id = action_new_id();
+            newAction.type = ACTION_STOP;
+            newAction.param = 0;
 
-            motor_stop();
-            forwards = false;
-            currentTurningDirection = 0;
-            lastColorHiddenOn = color1Match;
-            led_showColour(color1Match);
-            delay(2000);
+            action_execute(newAction);
             return;
         }
     }
-    else if (lastColorHiddenOn != -1)
+
+loop_v3_state_changed:
+
+
+
+    if ( state == STATE_RANDOM_WALK )
     {
-        Serial.println("turning LED it off");
-        led_setLED(0,0,0);
-        lastColorHiddenOn = -1;
-    }
-
-    int sideDist = 10;
-
-    if ( prox0CM <= sideDist || prox1CM <= 20 || prox2CM <= sideDist )
-    {
-        proxHit ++;
-    }
-
-    if (proxHit >= 2 )
-    {
-        int turningDirection = 1;
-
-        if ( random(0, 2) == 0 ) { turningDirection = -1; }
-
-        Serial.println("need to turn");
-        if ( forwards )
+        if ( locatecolor_willLookFor(color) )
         {
-            motor_stop();
-            forwards = false;
+            state = STATE_LOCATE_COLOR;
+            locatecolor_switchto(color);
+            goto loop_v3_state_changed;
         }
 
-        int ticks = random(50, 110);
-
-        int minSensNum;
-
-        if ( prox0CM < prox1CM && prox0CM < prox2CM )
+        newAction = randomwalk_newAction(lastAction, prox);
+    }
+    else if ( state == STATE_LOCATE_COLOR )
+    {
+        if ( locatecolor_success(color) )
         {
-            minSensNum = 0;
+            state = STATE_DANGER_SENSE;
+            goto loop_v3_state_changed;
         }
-        else if ( prox1CM < prox0CM && prox1CM < prox2CM )
+        else if ( locatecolor_finished() )
         {
-            minSensNum = 1;
+            led_off();
+
+            state = STATE_RANDOM_WALK;
+            randomwalk_switchto();
+            goto loop_v3_state_changed;
+        }
+
+        newAction = locatecolor_newAction(lastAction, color);
+    }
+    else if ( state == STATE_DANGER_SENSE )
+    {
+        newAction.id = action_new_id();
+        newAction.type = ACTION_STOP;
+        newAction.param = 0;
+        action_execute(newAction);
+
+        led_showColour(color.front);
+        int data = dangersense_dangersense(color.front);
+
+        if ( dangersense_shouldPanic(data) )
+        {
+            // TODO : actual panic the shit away
+
+            led_off();
+
+            state = STATE_RANDOM_WALK;
+            randomwalk_switchto();
+
+            return;
+
         }
         else
         {
-            minSensNum = 2;
-        }
+            led_off();
 
-        if ( minSensNum == 0 )
-        {
-            turningDirection = -1;
-        }
-        else if ( minSensNum == 2 )
-        {
-            turningDirection = 1;
-        }
-
-        if (currentTurningDirection != 0 )
-        {
-            turningDirection = currentTurningDirection;
-        }
-
-        if (turningDirection == -1) { turnForMe(-90,90,ticks); }
-        else                        { turnForMe(90,-90,ticks); }
-
-
-        proxHit = 1;
-        currentTurningDirection = turningDirection;
-    }
-    else
-    {
-        if ( !forwards )
-        {
-            courseLeftTicks = 0;
-            proxHit = 0;
-            currentTurningDirection = 0;
-            forwards = true;
-        }
-
-
-        if ( courseLeftTicks <= 0 )
-        {
-            print3Digit(prox0CM);
-            print3Digit(prox1CM);
-            print3Digit(prox2CM);
-            Serial.print("\n");
-
-            int rn = random(0,10);
-
-            int distToChange = 30;
-
-            int turnMaxGoal = 50;
-            int turnMinGoal = 30;
-
-            int turnMaxSpeed = 100;
-            int turnMinSpeed = 50;
-
-            if ( prox0CM <= distToChange && measureProxSensor(PROX_0_PIN) <= distToChange )
-            {
-                Serial.println("forwards >");
-                leftGoal = turnMaxGoal;
-                rightGoal = turnMinGoal;
-
-                leftSpeed = turnMaxSpeed;
-                rightSpeed = turnMinSpeed;
-            }
-            else if ( prox2CM <= distToChange && measureProxSensor(PROX_2_PIN) <= distToChange )
-            {
-                Serial.println("forwards <");
-                leftGoal = turnMinGoal;
-                rightGoal = turnMaxGoal;
-
-                leftSpeed = turnMinSpeed;
-                rightSpeed = turnMaxSpeed;
-            }
-            else
-            {
-                Serial.println("forwards ^");
-                leftGoal = 40;
-                rightGoal = 40;
-
-                leftSpeed = 90;
-                rightSpeed = 90;
-            }
-
-            courseLeftTicks = COURSE_TIME;
-
-            motor_setSpeeds(leftSpeed, rightSpeed);
+            state = STATE_RANDOM_WALK;
+            randomwalk_switchto();
 
             return;
         }
-
-        encoder_reset();
-        delay(50);
-
-        int change = 2;
-
-        if ( leftCount < leftGoal - change )
-        {
-            leftSpeed += change;
-        }
-        else if (leftCount > leftGoal + change )
-        {
-            leftSpeed -= change;
-        }
-
-        if ( rightCount < rightGoal - change )
-        {
-            rightSpeed += change;
-        }
-        else if (rightCount > rightGoal + change )
-        {
-            rightSpeed -= change;
-        }
-
-        motor_setSpeeds(leftSpeed, rightSpeed);
-
-        courseLeftTicks--;
     }
+
+    action_execute(newAction);
 }
+
+// ------------------------------------------------------------ //
+
+int leftSpeed;
+int rightSpeed;
+
+void findGoodSpeed()
+{
+    encoder_reset();
+    delay(50);
+
+    int leftGoal = 40;
+    int rightGoal = 40;
+    int change = 2;
+
+    if ( leftCount < leftGoal - change )
+    {
+        leftSpeed += change;
+    }
+    else if (leftCount > leftGoal + change )
+    {
+        leftSpeed -= change;
+    }
+
+    if ( rightCount < rightGoal - change )
+    {
+        rightSpeed += change;
+    }
+    else if (rightCount > rightGoal + change )
+    {
+        rightSpeed -= change;
+    }
+
+    motor_setLeftSpeed(leftSpeed);
+    motor_setRightSpeed(rightSpeed);
+}
+
+#define DEBUG_STATE_NONE 0
+#define DEBUG_STATE_FIND_GOOD_SPEED 1
+#define DEBUG_STATE_LOCATE_COLOR 2
+
+int specialState = DEBUG_STATE_NONE;
+unsigned long specialStateEnd;
 
 void debug_loop()
 {
+    if ( specialState != DEBUG_STATE_NONE )
+    {
+        if ( specialState == DEBUG_STATE_FIND_GOOD_SPEED )
+        {
+            //findGoodSpeed();
+        }
+        else if (specialState == DEBUG_STATE_LOCATE_COLOR)
+        {
+            if ( state == STATE_LOCATE_COLOR )
+            {
+                loop_v3();
+            }
+            else
+            {
+                Serial.println("Not trying to find color anymore");
+                specialStateEnd = 0;
+            }
+        }
+
+        if ( millis() > specialStateEnd )
+        {
+            if ( specialState == DEBUG_STATE_FIND_GOOD_SPEED)
+            {
+                motor_stop();
+                Serial.print(leftSpeed);
+                Serial.print(" ");
+                Serial.print(rightSpeed);
+                Serial.print("\n");
+            }
+
+            motor_stop();
+            led_off();
+            specialState = DEBUG_STATE_NONE;
+        }
+
+        return;
+    }
+
     if (Serial.available() == 0) { delay(100); return; }
 
-    char cmd = Serial.read();
+    char buffer[20] = {};
+    msg_t msg = msg_fromSerialParse(buffer,20);
+
+    if ( msg.len == -1 )
+    {
+        err();
+        return;
+    }
+
+    char cmd = msg_read(&msg);
 
     if ( cmd == 'P' || cmd == 'p' )
     {
@@ -295,6 +309,34 @@ void debug_loop()
         print3Digit(prox2CM);
         Serial.print("\n");
     }
+    else if ( cmd == 'K' || cmd == 'k' )
+    {
+        colormatch_t color = colorsens_measureAll();
+        state = STATE_LOCATE_COLOR;
+        locatecolor_switchto(color);
+        specialStateEnd = millis() + 30 * 1000;
+        specialState = DEBUG_STATE_LOCATE_COLOR;
+    }
+    else if ( cmd == 'F' || cmd == 'f' )
+    {
+        //int timeInSec = msg_parseInt(&msg);
+        //msg_read(&msg);
+        int timeInSec = 1;
+
+        int leftSpeed = msg_parseInt(&msg);
+        msg_read(&msg);
+        int rightSpeed = msg_parseInt(&msg);
+
+        specialState = DEBUG_STATE_FIND_GOOD_SPEED;
+        specialStateEnd = millis() + timeInSec * 1000;
+
+        motor_setSpeeds(leftSpeed,rightSpeed);
+
+        colorsens_readALot(0,2);
+
+        // leftSpeed = 90;
+        // rightSpeed = 90;
+    }
     else if ( cmd == 'V' || cmd == 'v' )
     {
         Serial.print("0= ");
@@ -306,17 +348,37 @@ void debug_loop()
     }
     else if ( cmd == 'X' || cmd == 'x' )
     {
-        int num = Serial.parseInt();
-        Serial.read();
-        int colorGain = Serial.parseInt();
-        Serial.read();
-        int clearGain = Serial.parseInt();
+        int num = msg_parseInt(&msg);
+        msg_read(&msg);
+        int colorGain = msg_parseInt(&msg);
+        msg_read(&msg);
+        int clearGain = msg_parseInt(&msg);
+        msg_read(&msg);
 
-        colorsens_setCalibration(num,colorGain,clearGain);
+        int colorCapRed = msg_parseInt(&msg);
+        msg_read(&msg);
+        int colorCapGreen = msg_parseInt(&msg);
+        msg_read(&msg);
+        int colorCapBlue = msg_parseInt(&msg);
+        msg_read(&msg);
+        int colorCapClear = msg_parseInt(&msg);
+
+        colorsens_setCalibration(num, colorGain,clearGain,
+                                 colorCapRed, colorCapGreen,
+                                 colorCapBlue, colorCapClear);
+    }
+    else if (cmd == 'S' || cmd == 's' )
+    {
+        int asdf = dangersense();
+
+        if ( asdf != 0 )
+        {
+            panicMotherFucker(asdf);
+        }
     }
     else if ( cmd == 'C' || cmd == 'c' )
     {
-        char cmd = Serial.read();
+        char cmd = msg_read(&msg);
 
         if ( cmd == 'C' || cmd == 'c' )
         {
@@ -328,7 +390,7 @@ void debug_loop()
         }
         else if (cmd == 'S' || cmd == 's' )
         {
-            int num = Serial.parseInt();
+            int num = msg_parseInt(&msg);
             colorsens_activate_special(num);
         }
         else if (cmd == 'A' || cmd == 'a' )
@@ -338,22 +400,29 @@ void debug_loop()
         else if (cmd == '0' )
         {
             colorsens_debug_sens(0);
+            colorsens_readALot(0,0);
         }
         else if (cmd == '1' )
         {
             colorsens_debug_sens(1);
+            colorsens_readALot(1,1);
         }
         else if (cmd == '2' )
         {
             colorsens_debug_sens(2);
+            colorsens_readALot(2,2);
+        }
+        else if (cmd == 'T' || cmd == 't')
+        {
+            colorsens_readALot(0,2);
         }
         else { err(); return; }
     }
     else if ( cmd == 'M' || cmd == 'm' )
     {
-        int leftSpeed = Serial.parseInt();
-        Serial.read(); // the comma
-        int rightSpeed = Serial.parseInt();
+        int leftSpeed = msg_parseInt(&msg);
+        msg_read(&msg); // the comma
+        int rightSpeed = msg_parseInt(&msg);
 
         motor_setLeftSpeed(leftSpeed);
         motor_setRightSpeed(rightSpeed);
@@ -364,7 +433,7 @@ void debug_loop()
     }
     else if ( cmd == 'L' || cmd == 'l' )
     {
-        char cmd = Serial.read();
+        char cmd = msg_read(&msg);
 
         if      ( cmd == 'R' || cmd == 'r' ) { led_setLED(255,0,0); }
         else if ( cmd == 'G' || cmd == 'g' ) { led_setLED(0,255,0); }
@@ -378,6 +447,16 @@ void debug_loop()
         else if ( cmd == '4' ) { led_showColour(4); }
         else if ( cmd == '5' ) { led_showColour(5); }
         else { err(); return; }
+    }
+    else if (cmd == 'A' || cmd == 'a' )
+    {
+        int red = msg_parseInt(&msg);
+        msg_read(&msg);
+        int green = msg_parseInt(&msg);
+        msg_read(&msg);
+        int blue = msg_parseInt(&msg);
+
+        led_setLED(red,green,blue);
     }
     else if (cmd == 'E' || cmd == 'e' )
     {
@@ -396,29 +475,33 @@ void debug_loop()
     }
     else if (cmd == 'T' || cmd == 't' )
     {
-        int ticks = Serial.parseInt();
-
-
+        int ticks = msg_parseInt(&msg);
 
         encoder_reset();
 
         if ( cmd == 'T' )
         {
-            motor_setLeftSpeed(-50);
-            motor_setRightSpeed(50);
+            motor_setLeftSpeed(-90);
+            motor_setRightSpeed(90);
         }
         else
         {
-            motor_setLeftSpeed(50);
-            motor_setRightSpeed(-50);
+            motor_setLeftSpeed(90);
+            motor_setRightSpeed(-90);
         }
 
-        while ( rightCount < ticks || leftCount < ticks )
-        {
+        // bool stupid;
 
-        }
-        motor_setLeftSpeed(0);
-        motor_setRightSpeed(0);
+        // while ( leftCount < ticks )
+        // {
+        //     stupid = leftCount = 42;
+        //     //Serial.println(leftCount);
+        // }
+
+
+        delay(ticks);
+
+        motor_stop();
 
         Serial.print("l=");
         Serial.print(leftCount);
@@ -426,9 +509,6 @@ void debug_loop()
         Serial.print(rightCount);
         Serial.print("\n");
     }
-
-    // backwards :)
-    // m-30,-50
     else { err(); return; }
 
     Serial.println("done");
