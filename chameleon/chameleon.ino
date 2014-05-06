@@ -369,12 +369,7 @@ void debug_loop()
     }
     else if (cmd == 'S' || cmd == 's' )
     {
-        int asdf = dangersense();
-
-        if ( asdf != 0 )
-        {
-            panicMotherFucker(asdf);
-        }
+        // TODO : dangersense
     }
     else if ( cmd == 'C' || cmd == 'c' )
     {

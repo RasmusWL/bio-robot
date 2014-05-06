@@ -1,13 +1,13 @@
 #define DANGERSENSE_TIME 10 * 1000 // in milliseconds
-#define DANGERSENSE_STAY_PUT_TIME = 3 * 1000
+#define DANGERSENSE_STAY_PUT_TIME 3 * 1000
 
 #define DANGERSENSE_NONE 0
-#define DANGERSENSE_LEFT 150
-#define DANGERSENSE_LEFT_MIDDLE 165
-#define DANGERSENSE_MIDDLE 180
-#define DANGERSENSE_RIGHT_MIDDLE -165
-#define DANGERSENSE_RIGHT -150
-#define DANGERSENSE_ALL 180
+#define DANGERSENSE_LEFT 90 //150
+#define DANGERSENSE_LEFT_MIDDLE 90 //165
+#define DANGERSENSE_MIDDLE 90// 180
+#define DANGERSENSE_RIGHT_MIDDLE -90 //-165
+#define DANGERSENSE_RIGHT -90 //-150
+#define DANGERSENSE_ALL -90 //180
 
 #define DANGER_DIST_PANIC 20
 #define DANGER_DIST_INTIMIDATE 30
@@ -68,7 +68,7 @@ prox_t dangersense_readPrecise()
 
 int dangersense_dangersense(int color)
 {
-    long endTime = millis() + DANGERSENSE_TIME;
+    unsigned long endTime = millis() + DANGERSENSE_TIME;
 
     prox_t reading;
 
@@ -148,14 +148,14 @@ int dangersense_dangersense(int color)
 
         if (result != DANGERSENSE_NONE)
         {
-            return result
+            return result;
         }
         else if (   (reading.left < leftMin     && reading.left < DANGER_DIST_INTIMIDATE)
             || (reading.middle < middleMin && reading.middle < DANGER_DIST_INTIMIDATE)
             || (reading.right < rightMin   && reading.right < DANGER_DIST_INTIMIDATE)
             )
         {
-            endTime = max( endTime, millis() + DANGERSENSE_STAY_PUT_TIME );
+            endTime = max( endTime , millis() + DANGERSENSE_STAY_PUT_TIME );
             dangersense_intimidateUpdate();
             Serial.println("go away you creep!");
         }
@@ -164,7 +164,7 @@ int dangersense_dangersense(int color)
             || (reading.right < rightMin   && reading.right < DANGER_DIST_STAY_PUT)
             )
         {
-            endTime = max( endTime, millis() + DANGERSENSE_STAY_PUT_TIME );
+            endTime = max( endTime , millis() + DANGERSENSE_STAY_PUT_TIME );
             Serial.println("uh, somethings there!");
             led_showDim(color);
         }
