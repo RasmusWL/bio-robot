@@ -22,6 +22,7 @@ prox_t prox_readAll()
 
     return reading;
 }
+
 prox_t prox_all_averaged(int samples, int delayTime)
 {
     // long startTime = millis();
@@ -52,15 +53,15 @@ prox_t prox_all_averaged(int samples, int delayTime)
 
     // long endTime = millis();
 
-    Serial.print("totals:");
-    print3Digit(leftDist);
-    print3Digit(middleDist);
-    print3Digit(rightDist);
+    // Serial.print("totals:");
+    // print3Digit(leftDist);
+    // print3Digit(middleDist);
+    // print3Digit(rightDist);
 
     // Serial.print (" [");
     // Serial.print(endTime - startTime);
     // Serial.print("]");
-    Serial.print("\n");
+    // Serial.print("\n");
 
     return result;
 }
