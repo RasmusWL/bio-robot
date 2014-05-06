@@ -55,8 +55,11 @@ void __setMotorSpeed(int newSpeed, int oldSpeed, char SPEED_PIN, char DIR_PIN)
 
 void motor_stop()
 {
-    motor_setLeftSpeed ( (_leftSpeed/abs(_leftSpeed) ) * -255 );
-    motor_setRightSpeed ( (_rightSpeed/abs(_rightSpeed) ) * -255 );
+    if ( _leftSpeed != 0 )
+        motor_setLeftSpeed ( (_leftSpeed/abs(_leftSpeed) ) * -255 );
+
+    if ( _rightSpeed != 0 )
+        motor_setRightSpeed ( (_rightSpeed/abs(_rightSpeed) ) * 255 );
 
     delay(20);
 
