@@ -29,22 +29,22 @@
 #define COLOR_SENS_SELECT_1_PIN 8
 
 #define PROX_0_PIN A3
-#define PROX_1_PIN A1
-#define PROX_2_PIN A2
+#define PROX_1_PIN A2
+#define PROX_2_PIN A1
 
 #define LED_ON_PIN A0
 #define RED_PIN 5
 #define GREEN_PIN 6
 #define BLUE_PIN 9
 
-#define ENCODER_LEFT_A  3
-#define ENCODER_LEFT_B  4
+#define ENCODER_LEFT_A  2
+//#define ENCODER_LEFT_B  4
 
-#define ENCODER_RIGHT_A  2
+#define ENCODER_RIGHT_A  3
 //#define ENCODER_RIGHT_B  7
 
-#define LEFT_MOTOR_SPEED_PIN 10
-#define LEFT_MOTOR_DIR_PIN 12
+#define LEFT_MOTOR_SPEED_PIN 11
+#define LEFT_MOTOR_DIR_PIN 13
 
-#define RIGHT_MOTOR_SPEED_PIN 11
-#define RIGHT_MOTOR_DIR_PIN 13
+#define RIGHT_MOTOR_SPEED_PIN 10
+#define RIGHT_MOTOR_DIR_PIN 12
