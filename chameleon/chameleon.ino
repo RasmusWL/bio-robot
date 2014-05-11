@@ -10,13 +10,17 @@
 #include "proximity.h"
 #include "movementdist.h"
 
-#define DEBUG false
-#define BLUETOOTH true
+#define DEBUG true
+#define BLUETOOTH false
 
 #define STATE_RANDOM_WALK 0
 #define STATE_LOCATE_COLOR 1
 #define STATE_DANGER_SENSE 2
 #define STATE_PANIC 3
+
+char* stateNames[] = {"random", "locate", "danger", "panic"};
+
+#define STATE_DEBUG false
 
 void loop_v3();
 
@@ -61,15 +65,12 @@ void loop()
 // bluetooth info at https://learn.sparkfun.com/tutorials/using-the-bluesmirf/all
 void bluetooth_setup()
 {
-    led_setLED(255,0,0);
-    delay(1000);
+    delay(500);
 
     Serial.begin(115200);  // The Bluetooth Mate defaults to 115200bps
     Serial.print("$");  // Print three times individually
     Serial.print("$");
     Serial.print("$");  // Enter command mode
-    delay(100);  // Short delay, wait for the Mate to send back CMD
-    led_setLED(0,0,255);
     delay(500);
     Serial.println("U,9600,N");  // Temporarily Change the baudrate to 9600, no parity
     // delay(2000);
@@ -83,9 +84,7 @@ void bluetooth_setup()
         Serial.read();
     }
 
-    led_setLED(0,255,0);
     delay(500);
-    led_off();
 }
 
 // ------------------------------------------------------------ //
@@ -132,9 +131,12 @@ void loop_v3()
         }
     }
 
+    goto loop_v3_no_state_change;
+
 loop_v3_state_changed:
-
-
+    Serial.print("State changed to ");
+    Serial.println(stateNames[state]);
+loop_v3_no_state_change:
 
     if ( state == STATE_RANDOM_WALK )
     {
@@ -154,8 +156,9 @@ loop_v3_state_changed:
             state = STATE_DANGER_SENSE;
             goto loop_v3_state_changed;
         }
-        else if ( locatecolor_finished() )
+        else if ( locatecolor_isFinished() )
         {
+            locatecolor_finishedHiding();
             led_off();
 
             state = STATE_RANDOM_WALK;
@@ -175,27 +178,35 @@ loop_v3_state_changed:
         led_showColour(color.front);
         int data = dangersense_dangersense(color.front);
 
+        locatecolor_finishedHiding();
+        led_off();
+
         if ( dangersense_shouldPanic(data) )
         {
-            // TODO : actual panic the shit away
-
-            led_off();
-
-            state = STATE_RANDOM_WALK;
-            randomwalk_switchto();
-
+            state = STATE_PANIC;
+            panic_switchto(data);
+            Serial.println("State changed to panic!");
             return;
 
         }
         else
         {
-            led_off();
-
             state = STATE_RANDOM_WALK;
             randomwalk_switchto();
-
+            Serial.println("State changed to random");
             return;
         }
+    }
+    else if ( state == STATE_PANIC )
+    {
+        if ( panic_isFinished() || panic_hasTurned() && lastAction.type == ACTION_STOP )
+        {
+            state = STATE_RANDOM_WALK;
+            randomwalk_switchto();
+            goto loop_v3_state_changed;
+        }
+
+        newAction = panic_newAction(lastAction, prox);
     }
 
     action_execute(newAction);
@@ -211,8 +222,8 @@ void findGoodSpeed()
     encoder_reset();
     delay(50);
 
-    int leftGoal = 40;
-    int rightGoal = 40;
+    int leftGoal = 30;
+    int rightGoal = 30;
     int change = 2;
 
     if ( leftCount < leftGoal - change )
@@ -240,6 +251,9 @@ void findGoodSpeed()
 #define DEBUG_STATE_NONE 0
 #define DEBUG_STATE_FIND_GOOD_SPEED 1
 #define DEBUG_STATE_LOCATE_COLOR 2
+#define DEBUG_STATE_MANUAL_ENCODER 3
+#define DEBUG_STATE_RANDOM_WALK 4
+#define DEBUG_STATE_PANIC 5
 
 int specialState = DEBUG_STATE_NONE;
 unsigned long specialStateEnd;
@@ -250,7 +264,7 @@ void debug_loop()
     {
         if ( specialState == DEBUG_STATE_FIND_GOOD_SPEED )
         {
-            //findGoodSpeed();
+            findGoodSpeed();
         }
         else if (specialState == DEBUG_STATE_LOCATE_COLOR)
         {
@@ -263,6 +277,38 @@ void debug_loop()
                 Serial.println("Not trying to find color anymore");
                 specialStateEnd = 0;
             }
+        }
+        else if ( specialState == DEBUG_STATE_RANDOM_WALK )
+        {
+             if ( state == STATE_RANDOM_WALK )
+            {
+                loop_v3();
+            }
+            else
+            {
+                Serial.println("Not debug random walk anymore");
+                specialStateEnd = 0;
+            }
+        }
+        else if ( specialState == DEBUG_STATE_PANIC )
+        {
+             if ( state == STATE_PANIC )
+            {
+                loop_v3();
+            }
+            else
+            {
+                Serial.println("No more panic");
+                specialStateEnd = 0;
+            }
+        }
+        else if ( specialState == DEBUG_STATE_MANUAL_ENCODER )
+        {
+            print3Digit(leftCount);
+            Serial.print("  ");
+            print3Digit(rightCount);
+            Serial.print("\n");
+            delay(20);
         }
 
         if ( millis() > specialStateEnd )
@@ -295,9 +341,89 @@ void debug_loop()
         return;
     }
 
+    // Commands:
+    //
+    // k                locate colour
+    // r                random walk
+    // s                danger sense
+    // a<N>             panic
+    //
+    // p                proximity
+    // o                danger sense reading
+    //
+    // cc               color calibrate
+    // cm               color measure
+    // cs<N>            activate
+    // ca               activate showoff
+    // c0               read a lot from 0
+    // c1               read a lot from 1
+    // c2               read a lot from 2
+    // ct               read a lot from all
+    //
+    // v                read colorsens config
+    // x[params]        set colorsens config
+    //
+    // l<?>             LED
+    // d                disco
+    //
+    // e                encoders 1 sec
+    // w                encoders 30 sec
+    //
+    // m<N>,<M>         motors on at N M
+    // f<N>,<M>         motors on 1 sec at N M
+    //
+    // t<N>             turn one way
+    // T<N>             turn other way
+
     char cmd = msg_read(&msg);
 
-    if ( cmd == 'P' || cmd == 'p' )
+    // ---------------------------------------- //
+    //                 BEHAVIOR                 //
+    // ---------------------------------------- //
+    if ( cmd == 'K' || cmd == 'k' )
+    {
+        colormatch_t color = colorsens_measureAll();
+        state = STATE_LOCATE_COLOR;
+        locatecolor_switchto(color);
+        specialStateEnd = millis() + 30 * 1000;
+        specialState = DEBUG_STATE_LOCATE_COLOR;
+    }
+    else if ( cmd == 'R' || cmd == 'r' )
+    {
+        state = STATE_RANDOM_WALK;
+        specialStateEnd = millis() + 2 * 1000;
+        specialState = DEBUG_STATE_RANDOM_WALK;
+    }
+    else if (cmd == 'S' || cmd == 's' )
+    {
+        //colormatch_t color = colorsens_measureAll();
+
+        // if ( color.front == -1 )
+        // {
+        //     Serial.println("Is not on a known colour");
+        //     return;
+        // }
+
+        // led_showColour(color.front);
+        // int result = dangersense_dangersense(color.front);
+        led_showColour(1);
+        int result = dangersense_dangersense(1);
+        Serial.println(result);
+    }
+    else if ( cmd == 'A' || cmd == 'a' )
+    {
+        int degToTurn = msg_parseInt(&msg);
+        state = STATE_PANIC;
+        panic_switchto(degToTurn);
+        Serial.println(degToTurn);
+
+        specialStateEnd = millis() + 10 * 1000;
+        specialState = DEBUG_STATE_PANIC;
+    }
+    // ---------------------------------------- //
+    //                PROXIMITY                 //
+    // ---------------------------------------- //
+    else if ( cmd == 'P' || cmd == 'p' )
     {
         int prox0CM = measureProxSensor(PROX_0_PIN);
         int prox1CM = measureProxSensor(PROX_1_PIN);
@@ -309,68 +435,18 @@ void debug_loop()
         print3Digit(prox2CM);
         Serial.print("\n");
     }
-    else if ( cmd == 'K' || cmd == 'k' )
+    else if (cmd == 'O' || cmd == 'o' )
     {
-        colormatch_t color = colorsens_measureAll();
-        state = STATE_LOCATE_COLOR;
-        locatecolor_switchto(color);
-        specialStateEnd = millis() + 30 * 1000;
-        specialState = DEBUG_STATE_LOCATE_COLOR;
+        prox_t reading = prox_all_averaged(5, 1);
+
+        print3Digit(reading.left);
+        print3Digit(reading.middle);
+        print3Digit(reading.right);
+        Serial.print("\n");
     }
-    else if ( cmd == 'F' || cmd == 'f' )
-    {
-        //int timeInSec = msg_parseInt(&msg);
-        //msg_read(&msg);
-        int timeInSec = 1;
-
-        int leftSpeed = msg_parseInt(&msg);
-        msg_read(&msg);
-        int rightSpeed = msg_parseInt(&msg);
-
-        specialState = DEBUG_STATE_FIND_GOOD_SPEED;
-        specialStateEnd = millis() + timeInSec * 1000;
-
-        motor_setSpeeds(leftSpeed,rightSpeed);
-
-        colorsens_readALot(0,2);
-
-        // leftSpeed = 90;
-        // rightSpeed = 90;
-    }
-    else if ( cmd == 'V' || cmd == 'v' )
-    {
-        Serial.print("0= ");
-        colorsens_printCalibration(0);
-        Serial.print("1= ");
-        colorsens_printCalibration(1);
-        Serial.print("2= ");
-        colorsens_printCalibration(2);
-    }
-    else if ( cmd == 'X' || cmd == 'x' )
-    {
-        int num = msg_parseInt(&msg);
-        msg_read(&msg);
-        int colorGain = msg_parseInt(&msg);
-        msg_read(&msg);
-        int clearGain = msg_parseInt(&msg);
-        msg_read(&msg);
-
-        int colorCapRed = msg_parseInt(&msg);
-        msg_read(&msg);
-        int colorCapGreen = msg_parseInt(&msg);
-        msg_read(&msg);
-        int colorCapBlue = msg_parseInt(&msg);
-        msg_read(&msg);
-        int colorCapClear = msg_parseInt(&msg);
-
-        colorsens_setCalibration(num, colorGain,clearGain,
-                                 colorCapRed, colorCapGreen,
-                                 colorCapBlue, colorCapClear);
-    }
-    else if (cmd == 'S' || cmd == 's' )
-    {
-        // TODO : dangersense
-    }
+    // ---------------------------------------- //
+    //                COLORSENS                 //
+    // ---------------------------------------- //
     else if ( cmd == 'C' || cmd == 'c' )
     {
         char cmd = msg_read(&msg);
@@ -411,21 +487,63 @@ void debug_loop()
         {
             colorsens_readALot(0,2);
         }
+        else if (cmd == 'F' || cmd == 'f')
+        {
+            motor_setSpeeds(70/2,62/2);
+            delay(100);
+            motor_setSpeeds((70*3) /4, (62*3) /4);
+            delay(100);
+            motor_setSpeeds((70*4) /5, (62*4) /5);
+            delay(100);
+            motor_setSpeeds(70,62);
+            colorsens_readALot(0,2);
+            motor_stop();
+        }
+        else if (cmd == 'G' || cmd == 'g' )
+        {
+            motor_setSpeeds(-62/2,60/2);
+            delay(50);
+            motor_setSpeeds(-(62*3) /4,(60*3) /4);
+            delay(50);
+            motor_setSpeeds(-62,60);
+            colorsens_readALot(0,2);
+            motor_stop();
+        }
         else { err(); return; }
     }
-    else if ( cmd == 'M' || cmd == 'm' )
+    else if ( cmd == 'V' || cmd == 'v' )
     {
-        int leftSpeed = msg_parseInt(&msg);
-        msg_read(&msg); // the comma
-        int rightSpeed = msg_parseInt(&msg);
+        Serial.print("0= ");
+        colorsens_printCalibration(0);
+        Serial.print("1= ");
+        colorsens_printCalibration(1);
+        Serial.print("2= ");
+        colorsens_printCalibration(2);
+    }
+    else if ( cmd == 'X' || cmd == 'x' )
+    {
+        int num = msg_parseInt(&msg);
+        msg_read(&msg);
+        int colorGain = msg_parseInt(&msg);
+        msg_read(&msg);
+        int clearGain = msg_parseInt(&msg);
+        msg_read(&msg);
 
-        motor_setLeftSpeed(leftSpeed);
-        motor_setRightSpeed(rightSpeed);
+        int colorCapRed = msg_parseInt(&msg);
+        msg_read(&msg);
+        int colorCapGreen = msg_parseInt(&msg);
+        msg_read(&msg);
+        int colorCapBlue = msg_parseInt(&msg);
+        msg_read(&msg);
+        int colorCapClear = msg_parseInt(&msg);
+
+        colorsens_setCalibration(num, colorGain,clearGain,
+                                 colorCapRed, colorCapGreen,
+                                 colorCapBlue, colorCapClear);
     }
-    else if ( cmd == 'D' || cmd == 'd' )
-    {
-        led_disco();
-    }
+    // ---------------------------------------- //
+    //                    LED                   //
+    // ---------------------------------------- //
     else if ( cmd == 'L' || cmd == 'l' )
     {
         char cmd = msg_read(&msg);
@@ -443,16 +561,13 @@ void debug_loop()
         else if ( cmd == '5' ) { led_showColour(5); }
         else { err(); return; }
     }
-    else if (cmd == 'A' || cmd == 'a' )
+    else if ( cmd == 'D' || cmd == 'd' )
     {
-        int red = msg_parseInt(&msg);
-        msg_read(&msg);
-        int green = msg_parseInt(&msg);
-        msg_read(&msg);
-        int blue = msg_parseInt(&msg);
-
-        led_setLED(red,green,blue);
+        led_disco();
     }
+    // ---------------------------------------- //
+    //                 ENCODERS                 //
+    // ---------------------------------------- //
     else if (cmd == 'E' || cmd == 'e' )
     {
         int oldLeft = leftCount;
@@ -468,6 +583,47 @@ void debug_loop()
         Serial.print(deltaRight);
         Serial.print("\n");
     }
+    else if (cmd == 'W' || cmd == 'w' )
+    {
+        encoder_reset();
+        specialStateEnd = millis() + (20 * 1000);
+        specialState = DEBUG_STATE_MANUAL_ENCODER;
+    }
+    // ---------------------------------------- //
+    //                  MOTORS                  //
+    // ---------------------------------------- //
+    else if ( cmd == 'M' || cmd == 'm' )
+    {
+        int leftSpeed = msg_parseInt(&msg);
+        msg_read(&msg); // the comma
+        int rightSpeed = msg_parseInt(&msg);
+
+        motor_setLeftSpeed(leftSpeed);
+        motor_setRightSpeed(rightSpeed);
+    }
+    else if ( cmd == 'F' || cmd == 'f' )
+    {
+        int timeInSec = msg_parseInt(&msg);
+        msg_read(&msg);
+        //int timeInSec = 1;
+
+        int leftSpeed = msg_parseInt(&msg);
+        msg_read(&msg);
+        int rightSpeed = msg_parseInt(&msg);
+
+        specialState = DEBUG_STATE_FIND_GOOD_SPEED;
+        specialStateEnd = millis() + timeInSec * 1000;
+
+        motor_setSpeeds(leftSpeed,rightSpeed);
+
+        // colorsens_readALot(0,2);
+
+        leftSpeed = 44;
+        rightSpeed = 40;
+    }
+    // ---------------------------------------- //
+    //                   TURN                   //
+    // ---------------------------------------- //
     else if (cmd == 'T' || cmd == 't' )
     {
         int ticks = msg_parseInt(&msg);
@@ -476,34 +632,31 @@ void debug_loop()
 
         if ( cmd == 'T' )
         {
-            motor_setLeftSpeed(-90);
-            motor_setRightSpeed(90);
+            motor_setLeftSpeed(-62);
+            motor_setRightSpeed(60);
         }
-        else
+        else if ( cmd == 't' )
         {
-            motor_setLeftSpeed(90);
-            motor_setRightSpeed(-90);
+            motor_setLeftSpeed(62);
+            motor_setRightSpeed(-60);
         }
 
-        // bool stupid;
+        while ( rightCount < ticks )
+        {
+        }
 
-        // while ( leftCount < ticks )
-        // {
-        //     stupid = leftCount = 42;
-        //     //Serial.println(leftCount);
-        // }
-
-
-        delay(ticks);
+        int lv = leftCount;
+        int rv = rightCount;
 
         motor_stop();
 
         Serial.print("l=");
-        Serial.print(leftCount);
+        Serial.print(lv);
         Serial.print(" r=");
-        Serial.print(rightCount);
+        Serial.print(rv);
         Serial.print("\n");
     }
+    // test
     else { err(); return; }
 
     Serial.println("done");

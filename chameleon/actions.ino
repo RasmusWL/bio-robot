@@ -1,87 +1,72 @@
-unsigned long turnStart;
+#define DEBUG_ACTIONS true
 
 void action_execute(action_t action)
 {
-    // action_t last_action = action_history[0];
+    bool isNewAction = action.id != action_history[0].id;
 
-    // if ( last_action.id == action.id )
-    // {
-    //     if ( action.type == ACTION_STRAIGHT )
-    //     {
-    //         if ( action.param < encoder_distance_traveled() )
-    //         {
-    //             action.type = ACTION_STOP;
-    //             action.id = action_new_id();
-    //         }
-    //         else
-    //         {
-    //             return;
-    //         }
-    //     }
-    //     else
-    //     {
-    //         Serial.println("Only going straight must share IDs");
-    //         delay(100000);
-    //         return;
-    //     }
-    // }
-
-    // // ------------------------------------------------------------ //
-    // // we have a "new" action we need to run
-
-    // if ( last_action.type == ACTION_STRAIGHT )
-    // {
-    //     mapping_traveled( encoder_distance_traveled() );
-    //     encoder_reset();
-    // }
+    if ( isNewAction )
+    {
+        encoder_reset();
+    }
 
     // ------------------------------------------------------------ //
 
     if ( action.type == ACTION_STRAIGHT )
     {
-        motor_setLeftSpeed(75);
-        motor_setRightSpeed(70);
+        int leftSpeed = 70;
+        int rightSpeed = 62;
+
+        if ( leftCount < 250 || rightCount < 250 )
+        {
+            leftSpeed = leftSpeed - (leftSpeed/50);
+            rightSpeed = rightSpeed - (rightSpeed/50);
+        }
+
+        motor_setLeftSpeed(leftSpeed);
+        motor_setRightSpeed(rightSpeed);
 
         delay(40);
 
-        Serial.println("A: forwards");
+        if (DEBUG_ACTIONS) Serial.println("A: forwards");
     }
     else if ( action.type == ACTION_TURN )
     {
-        if ( action.id != action_history[0].id )
-        {
-            turnStart = millis();
-        }
+        int leftSpeed = 0;
+        int rightSpeed = 0;
 
-        // 90 deg CW = t390
-        // 90 deg CCW = T350
+        if ( !isNewAction )
+        {
+            if ( leftCount + 5 < rightCount )
+            {
+                leftSpeed = 2;
+            }
+            else if ( leftCount > rightCount + 5 )
+            {
+                rightSpeed = 2;
+            }
+        }
 
         if ( action.param < 0 )
         {
-            motor_setLeftSpeed(-70);
-            motor_setRightSpeed(70);
-
-            // delay ( -1 * (350 * action.param) / 90 );
+            leftSpeed = -62 - leftSpeed;
+            rightSpeed = 60 + rightSpeed;
         }
         else
         {
-            motor_setLeftSpeed(70);
-            motor_setRightSpeed(-70);
-
-            // delay ( (390 * action.param) / 90 );
+            leftSpeed = 60 + leftSpeed;
+            rightSpeed = -62 - rightSpeed;
         }
 
-        // motor_stop();
+        motor_setSpeeds(leftSpeed, rightSpeed);
 
         delay(20);
 
-        // mapping_rotated(action.param);
-        Serial.println("A: turn");
+        if (DEBUG_ACTIONS) Serial.println("A: turn");
     }
     else if ( action.type == ACTION_STOP )
     {
         motor_stop();
-        Serial.println("A: stop");
+        if (DEBUG_ACTIONS) Serial.println("A: stop");
     }
     else if ( action.type == ACTION_ONE_WHEEL )
     {
@@ -96,12 +81,11 @@ void action_execute(action_t action)
 
         delay(40);
 
-        Serial.println("A: one wheel");
+        if (DEBUG_ACTIONS) Serial.println("A: one wheel");
     }
 
     if ( action.id != action_history[0].id )
     {
-
         for (int i = HISTORY_LENGTH-2; i >= 0; i--)
         {
             action_history[i+1].type  = action_history[i].type;
@@ -126,12 +110,19 @@ int action_new_id()
 
 int action_degTurned( int turnWay )
 {
+    // t1168
+    // T1250
+
+    long ticks = (leftCount + rightCount)/2;
+
     if ( turnWay < 0 )
     {
-        return ( ( millis() - turnStart ) * 90 ) / 500;
+        return ( (ticks * 360) / 1250 );
+        // T1250
     }
     else
     {
-        return ( ( millis() - turnStart ) * 90 ) / 500;
+        return ( (ticks * 360) / 1150 );
+        // t1150
     }
 }

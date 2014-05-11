@@ -7,26 +7,26 @@ action_t randomwalk_newAction(action_t lastAction, prox_t prox)
     {
         action.id = lastAction.id;
     }
-    else if ( ( lastAction.type == ACTION_STOP || lastAction.type == ACTION_TURN )
-              && avoidance_shouldNotGoThisWay(prox)
+    else if ( lastAction.type == ACTION_STOP )
+    {
+        action.type = ACTION_TURN;
+        action.param = avoidance_turnPref(prox);
+        return action;
+    }
+    else if ( lastAction.type == ACTION_TURN
+              && (    (action_degTurned(lastAction.param) < 360 && avoidance_shouldNotGoThisWay(prox) )
+                   || (action_degTurned(lastAction.param) >= 360 && avoidance_shouldNotGoThisWayMiddleOnly(prox) )
+                 )
             )
     {
         action.type = ACTION_TURN;
-        if ( lastAction.type == ACTION_TURN )
-        {
-            action.param = lastAction.param;
-            action.id = lastAction.id;
-        }
-        else
-        {
-            action.param = 45 * avoidance_turnPref(prox);
-        }
+        action.param = lastAction.param;
+        action.id = lastAction.id;
 
         return action;
     }
 
     action.type = ACTION_STRAIGHT;
-
     return action;
 }
 
