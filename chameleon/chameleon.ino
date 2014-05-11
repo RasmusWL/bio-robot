@@ -166,7 +166,7 @@ loop_v3_no_state_change:
             goto loop_v3_state_changed;
         }
 
-        newAction = locatecolor_newAction(lastAction, color);
+        newAction = locatecolor_newAction(lastAction, color, prox);
     }
     else if ( state == STATE_DANGER_SENSE )
     {

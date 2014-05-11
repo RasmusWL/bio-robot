@@ -65,19 +65,31 @@ bool locatecolor_success(colormatch_t color)
 
 int _locatecolor_turnId;
 
-action_t locatecolor_newAction(action_t lastAction, colormatch_t color)
+action_t giveUp()
+{
+    action_t action = {};
+    action.id = action_new_id();
+    action.type = ACTION_STOP;
+    locatecolor_endTime = millis();
+    return action;
+}
+
+action_t locatecolor_newAction(action_t lastAction, colormatch_t color, prox_t prox)
 {
     action_t action = {};
     action.type = ACTION_STRAIGHT;
     action.param = 1000;
     action.id = action_new_id();
 
-    if ( lastAction.type == ACTION_STOP )
+    if ( lastAction.type == ACTION_STOP && avoidance_needToStop(prox) )
     {
-        action.type = ACTION_STOP;
+        if ( color.left != _lastColorLookedFor && color.right != _lastColorLookedFor )
+        {
+            return giveUp();
+        }
 
-        locatecolor_endTime = millis();
-        return action;
+        // a bit hacky, but will make the robot spin untill front is on good colour
+        color.front = -1;
     }
 
     if ( lastAction.type == ACTION_TURN && lastAction.id == _locatecolor_turnId )
