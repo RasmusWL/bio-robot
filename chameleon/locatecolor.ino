@@ -82,7 +82,7 @@ action_t locatecolor_newAction(action_t lastAction, colormatch_t color)
 
     if ( lastAction.type == ACTION_TURN && lastAction.id == _locatecolor_turnId )
     {
-        if ( color.front == -1 && action_degTurned(lastAction.param) < 360 )
+        if ( color.front != _lastColorLookedFor && action_degTurned(lastAction.param) < 360 )
         {
             action.type = ACTION_TURN;
             action.param = lastAction.param;
@@ -97,28 +97,26 @@ action_t locatecolor_newAction(action_t lastAction, colormatch_t color)
         }
     }
 
-    if ( color.front == color.left && color.front == color.right && color.front != -1 )
+    if ( color.front == color.left && color.front == color.right && color.front == _lastColorLookedFor )
     {
         action.type = ACTION_STOP;
         action.param = 0;
         return action;
     }
 
-    // TODO : check if it's the colour we're looking for, not just something != -1
-
-    if ( color.front == -1)
+    if ( color.front != _lastColorLookedFor)
     {
-        if ( color.left != -1 && color.right != -1 )
+        if ( color.left == _lastColorLookedFor && color.right == _lastColorLookedFor )
         {
             action.type = ACTION_TURN;
             action.param = TURN_WAY_LEFT;
         }
-        else if ( color.left != -1 )
+        else if ( color.left == _lastColorLookedFor )
         {
             action.type = ACTION_TURN;
             action.param = TURN_WAY_LEFT;
         }
-        else if ( color.right != -1 )
+        else if ( color.right == _lastColorLookedFor )
         {
             action.type = ACTION_TURN;
             action.param = TURN_WAY_RIGHT;
@@ -126,17 +124,17 @@ action_t locatecolor_newAction(action_t lastAction, colormatch_t color)
     }
     else
     {
-        if ( color.left == -1 && color.right == -1 )
+        if ( color.left != _lastColorLookedFor && color.right != _lastColorLookedFor )
         {
             action.type = ACTION_STRAIGHT;
             action.param = 1000;
         }
-        else if ( color.left != -1 )
+        else if ( color.left == _lastColorLookedFor )
         {
             action.type = ACTION_ONE_WHEEL;
             action.param = PARAM_ONE_WHEEL_RIGHT;
         }
-        else if ( color.right != -1 )
+        else if ( color.right == _lastColorLookedFor )
         {
             action.type = ACTION_ONE_WHEEL;
             action.param = PARAM_ONE_WHEEL_LEFT;
