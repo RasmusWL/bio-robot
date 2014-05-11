@@ -211,6 +211,7 @@ void ADJDS311::printCalibration()
   int colorCapBlue = readRegister(CAP_BLUE);
   int colorCapClear = readRegister(CAP_CLEAR);
 
+  Serial.print(",");
   Serial.print(colorCapRed);
   Serial.print(",");
   Serial.print(colorCapGreen);
