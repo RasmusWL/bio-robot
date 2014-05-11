@@ -1,17 +1,16 @@
-#define DANGERSENSE_TIME 10 * 1000 // in milliseconds
-#define DANGERSENSE_STAY_PUT_TIME 3 * 1000
+#define DANGERSENSE_TIME 5 * 1000 // in milliseconds
+#define DANGERSENSE_STAY_PUT_TIME 2 * 1000
 
 #define DANGERSENSE_NONE 0
 #define DANGERSENSE_LEFT 90 //150
-#define DANGERSENSE_LEFT_MIDDLE 90 //165
-#define DANGERSENSE_MIDDLE 90// 180
-#define DANGERSENSE_RIGHT_MIDDLE -90 //-165
+#define DANGERSENSE_LEFT_MIDDLE 120 //165
+#define DANGERSENSE_MIDDLE 150// 180
+#define DANGERSENSE_RIGHT_MIDDLE -120 //-165
 #define DANGERSENSE_RIGHT -90 //-150
-#define DANGERSENSE_ALL -90 //180
 
-#define DANGER_DIST_PANIC 20
-#define DANGER_DIST_INTIMIDATE 30
-#define DANGER_DIST_STAY_PUT 40
+#define DANGER_DIST_PANIC 15
+#define DANGER_DIST_INTIMIDATE 23
+#define DANGER_DIST_STAY_PUT 30
 
 #define DANGER_INTIMIDATE_UPDATESPEED 100
 
@@ -132,9 +131,8 @@ int dangersense_dangersense(int color)
         if ( reading.right < rightMin && reading.right < DANGER_DIST_PANIC)
         {
             Serial.println("right");
-            if (result == DANGERSENSE_LEFT) { return DANGERSENSE_ALL; }
-
-            result = DANGERSENSE_RIGHT;
+            if (result == DANGERSENSE_LEFT) { result = DANGERSENSE_MIDDLE; }
+            else { result = DANGERSENSE_RIGHT; }
         }
 
         if ( reading.middle < middleMin && reading.middle < DANGER_DIST_PANIC)
@@ -146,22 +144,28 @@ int dangersense_dangersense(int color)
             result = DANGERSENSE_MIDDLE;
         }
 
+        if ( result == DANGERSENSE_MIDDLE && reading.right < reading.left )
+        {
+            result = -DANGERSENSE_MIDDLE;
+        }
+
         if (result != DANGERSENSE_NONE)
         {
+            led_off();
             return result;
         }
-        else if (   (reading.left < leftMin     && reading.left < DANGER_DIST_INTIMIDATE)
-            || (reading.middle < middleMin && reading.middle < DANGER_DIST_INTIMIDATE)
-            || (reading.right < rightMin   && reading.right < DANGER_DIST_INTIMIDATE)
+        else if ( (reading.left < leftMin     && reading.left < DANGER_DIST_INTIMIDATE)
+               || (reading.middle < middleMin && reading.middle < DANGER_DIST_INTIMIDATE)
+               || (reading.right < rightMin   && reading.right < DANGER_DIST_INTIMIDATE)
             )
         {
             endTime = max( endTime , millis() + DANGERSENSE_STAY_PUT_TIME );
             dangersense_intimidateUpdate();
             Serial.println("go away you creep!");
         }
-        else if (   (reading.left < leftMin     && reading.left < DANGER_DIST_STAY_PUT)
-            || (reading.middle < middleMin && reading.middle < DANGER_DIST_STAY_PUT)
-            || (reading.right < rightMin   && reading.right < DANGER_DIST_STAY_PUT)
+        else if ( (reading.left < leftMin     && reading.left < DANGER_DIST_STAY_PUT)
+               || (reading.middle < middleMin && reading.middle < DANGER_DIST_STAY_PUT)
+               || (reading.right < rightMin   && reading.right < DANGER_DIST_STAY_PUT)
             )
         {
             endTime = max( endTime , millis() + DANGERSENSE_STAY_PUT_TIME );
