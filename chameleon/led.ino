@@ -25,7 +25,7 @@ void led_showColour(int color)
     led_setLED(red,green,blue);
 }
 
-void led_showDim(itn color)
+void led_showDim(int color)
 {
     int red   = pgm_read_byte_near(LED_VALS + color*3 + 0);
     int green = pgm_read_byte_near(LED_VALS + color*3 + 1);
@@ -52,13 +52,13 @@ void led_setLED(int red, int green, int blue)
 {
     if ( red == 0 && green == 0 && blue == 0 )
     {
-        digitalWrite(LED_ON_PIN, LOW);
+        digitalWrite(LED_ON_PIN, HIGH);
         _led_off = true;
         delay(3);
     }
     else if ( _led_off )
     {
-        digitalWrite(LED_ON_PIN, HIGH);
+        digitalWrite(LED_ON_PIN, LOW);
         _led_off = false;
         delay(3);
     }

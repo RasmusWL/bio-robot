@@ -229,6 +229,7 @@ colormatch_t colorsens_measureAll()
     match.front = colorsens_measure(0);
     match.right = colorsens_measure(1);
 
+    colorsens_off();
     return match;
 }
 
@@ -244,7 +245,7 @@ void colorsens_readALot(int fromSens, int toSens)
     int maxB = 0;
     int maxC = 0;
 
-    for (int i = 0; i < 20; i ++)
+    for (int i = 0; i < 15; i ++)
     {
         for (int j = fromSens; j <= toSens; j++)
         {
@@ -262,7 +263,7 @@ void colorsens_readALot(int fromSens, int toSens)
             maxC = max(maxC, color.clear);
         }
 
-        delay(30);
+        delay(10);
     }
 
     print3Digit(minR);

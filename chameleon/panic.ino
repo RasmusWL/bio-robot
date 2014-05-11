@@ -16,7 +16,7 @@ void panic_switchto(int degToTurn)
     finishedTurning = false;
 }
 
-action_t panic_panic(action_t lastAction, prox_t prox)
+action_t panic_newAction(action_t lastAction, prox_t prox)
 {
     action_t action = {};
 
@@ -27,6 +27,9 @@ action_t panic_panic(action_t lastAction, prox_t prox)
             action.id = action_new_id();
             action.type = ACTION_TURN;
             action.param = panic_degToTurn/abs(panic_degToTurn);
+
+            // todo : only positive degree now :)
+            panic_degToTurn = abs(panic_degToTurn);
 
             panic_turningID = action.id;
 
@@ -44,7 +47,7 @@ action_t panic_panic(action_t lastAction, prox_t prox)
         {
             finishedTurning = true;
 
-            return panic_panic(lastAction, prox);
+            return panic_newAction(lastAction, prox);
         }
     }
     else if ( panic_degToTurn != 0 && avoidance_shouldNotGoThisWay(prox) )
@@ -72,7 +75,12 @@ action_t panic_panic(action_t lastAction, prox_t prox)
 
 }
 
-bool panic_finished()
+bool panic_isFinished()
 {
     return finishedTurning && panic_endTime < millis();
+}
+
+bool panic_hasTurned()
+{
+    return finishedTurning;
 }

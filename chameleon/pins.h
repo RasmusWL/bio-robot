@@ -2,9 +2,9 @@
  *
  * ANALOG:
  *   0:  O  LED power on/off
- *   1:  I  Proximity Sensor 1
- *   2:  I  Proximity Sensor 2
- *   3:  I  Proximity Sensor 3
+ *   1:  I  Proximity Sensor 0
+ *   2:  I  Proximity Sensor 1
+ *   3:  I  Proximity Sensor 2
  *   4:  I  Color Sensor SDA (I2C)
  *   5:  I  Color Sensor SCL (I2C) - clock
  *
