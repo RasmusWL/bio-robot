@@ -10,7 +10,7 @@
 #include "proximity.h"
 #include "movementdist.h"
 
-#define DEBUG true
+#define DEBUG false
 #define BLUETOOTH false
 
 #define STATE_RANDOM_WALK 0
