@@ -1,5 +1,5 @@
 #define MAX_TIME_TO_LOCATE 5 * 1000
-#define TIME_AFTER_LAST_COLOR 3 * 1000
+#define TIME_AFTER_LAST_COLOR 5 * 1000
 
 unsigned long locatecolor_endTime;
 int _lastColorLookedFor;

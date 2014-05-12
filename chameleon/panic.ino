@@ -1,4 +1,4 @@
-#define PANIC_TIME 5 * 1000
+#define PANIC_TIME 3 * 1000
 #define PANIC_DRIVE_TIME 1.5 * 1000
 
 unsigned long panic_endTime;
